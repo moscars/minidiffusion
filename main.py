@@ -10,7 +10,7 @@ def extract_horses(filename, horses):
             horses.append(data[b'data'][i])
 
 def squeeze01(image):
-    return (image - 255) / 255
+    return image / 255
 
 def normalize(image):
     return (image * 2) - 1
@@ -30,5 +30,5 @@ if __name__ == '__main__':
     horses = np.array([squeeze01(x) for x in horses])
     show_image(horses[0])
     d = Diffusion()
-    noised = d.forward(normalize(horses[0]), 999)
+    noised = d.forward(normalize(horses[0]), 555)
     show_image(unnormalize(noised))
