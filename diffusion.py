@@ -15,9 +15,10 @@ class Diffusion:
         ''' 
         image: input image to be noised (3072,)
         '''
-
         orignal_weight = np.sqrt(self.alpha_hats[target_t])
         noise_weight = np.sqrt(1 - self.alphas[target_t])
         noise = np.random.normal(0, 1, image.shape)
         image_t = orignal_weight * image + noise_weight * noise
         return image_t
+    
+    
