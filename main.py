@@ -28,7 +28,9 @@ if __name__ == '__main__':
     extract_horses('data/test_batch', horses)
 
     horses = np.array([squeeze01(x) for x in horses])
-    show_image(horses[0])
     d = Diffusion()
-    noised = d.forward(normalize(horses[0]), 555)
-    show_image(unnormalize(noised))
+    noised2 = unnormalize(d.noise_image(normalize(horses[0]), 300))
+    noised3 = unnormalize(d.noise_image(normalize(horses[0]), 500))
+    noised4 = unnormalize(d.noise_image(normalize(horses[0]), 700))
+
+    show_images_grid([horses[0], noised2, noised3, noised4])

@@ -11,11 +11,13 @@ class Diffusion:
         self.alphas = 1 - self.betas
         self.alpha_hats = np.cumprod(self.alphas)
 
-    def forward(self, image, target_t):
+    def noise_image(self, image, target_t):
         ''' 
         image: input image to be noised (3072,)
         '''
-        cumulative_mean = image * np.sqrt(self.alpha_hats[target_t])
-        cumulative_variance = 1 - self.alphas[target_t]
-        image_t = np.random.normal(cumulative_mean, np.sqrt(cumulative_variance))
+
+        orignal_weight = np.sqrt(self.alpha_hats[target_t])
+        noise_weight = np.sqrt(1 - self.alphas[target_t])
+        noise = np.random.normal(0, 1, image.shape)
+        image_t = orignal_weight * image + noise_weight * noise
         return image_t
