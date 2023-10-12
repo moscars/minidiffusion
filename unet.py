@@ -42,12 +42,11 @@ class DownBlock(nn.Module):
             nn.Linear(embedding_dim, out_channels)
         )
     
-    def forward(self, x, t):
+    def forward(self, x, raw_emb):
         x = self.maxPool(x)
         x = self.res1(x)
         x = self.res2(x)
 
-        raw_emb = self.time_emb[t]
         emb = self.projectEmbedding(raw_emb)
 
         return x + emb
@@ -66,13 +65,12 @@ class UpBlock(nn.Module):
             nn.Linear(embedding_dim, out_channels)
         )
     
-    def forward(self, x, skip_x, t):
+    def forward(self, x, skip_x, raw_emb):
         x = self.upsample(x)
         x = torch.cat([skip_x, x], dim=1)
         x = self.res1(x)
         x = self.res2(x)
 
-        raw_emb = self.time_emb[t]
         emb = self.projectEmbedding(raw_emb)
 
         return x + emb
@@ -131,7 +129,22 @@ class UNet(nn.Module):
                     posMat[pos][i] = np.cos(pos / (10000 ** (i / embedding_dim)))
         return posMat
 
-    def forward(self, x):
-        pass
+    def forward(self, x, t):
+        t = self.time_emb[t]
 
-    
+        x = self.inp(x)
+        x2 = self.down1(x, t)
+        x2 = self.selfatt1(x2)
+        x3 = self.down2(x2, t)
+        x3 = self.selfatt2(x3)
+
+        x = self.middle1(x3)
+        x = self.middle2(x)
+
+        x = self.up1(x, x3, t)
+        x = self.selfatt4(x)
+        x = self.up2(x, x2, t)
+        x = self.selfatt5(x)
+
+        x = self.out(x)
+        return x
