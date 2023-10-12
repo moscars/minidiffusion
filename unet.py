@@ -30,9 +30,8 @@ class ConvResidualBlock(nn.Module):
         return x
 
 class DownBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, time_emb):
+    def __init__(self, in_channels, out_channels):
         super(DownBlock, self).__init__()
-        self.time_emb = time_emb
 
         self.maxPool = nn.MaxPool2d(kernel_size=2)
         self.res1 = ConvResidualBlock(in_channels, in_channels, use_residual=True)
@@ -54,9 +53,8 @@ class DownBlock(nn.Module):
         return x + emb
 
 class UpBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, time_emb):
+    def __init__(self, in_channels, out_channels):
         super(UpBlock, self).__init__()
-        self.time_emb = time_emb
 
         # used as opposite of max pool
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
@@ -80,11 +78,25 @@ class UpBlock(nn.Module):
         return x + emb
 
 class SelfAttention(nn.Module):
-    def __init__(self):
+    def __init__(self, channels, size):
         super(SelfAttention, self).__init__()
+        self.channels = channels
+        self.size = size
+        self.mha = nn.MultiheadAttention(embed_dim=channels, num_heads=4, batch_first=True)
+        self.ln1 = nn.LayerNorm(channels)
+        self.ln2 = nn.LayerNorm(channels)
+        self.linear1 = nn.Linear(channels, channels)
+        self.linear2 = nn.Linear(channels, channels)
     
     def forward(self, x):
-        pass
+        x_ln = self.ln1(x)
+        x_mha, _ = self.mha(x_ln, x_ln, x_ln)
+        x = x_mha + x
+        x_tmp = self.ln2(x)
+        x_tmp = F.gelu(self.linear1(x_tmp))
+        x_tmp = self.linear2(x_tmp)
+        x = x + x_tmp
+        return x
 
 class UNet(nn.Module):
     def __init__(self):
@@ -102,15 +114,12 @@ class UNet(nn.Module):
         self.middle1 = ConvResidualBlock(in_channels=256, out_channels=512, use_residual=False)
         self.middle2 = ConvResidualBlock(in_channels=512, out_channels=256, use_residual=False)
 
-        self.up1 = UpBlock()
+        self.up1 = UpBlock(in_channels=512, out_channels=128)
         self.selfatt4 = SelfAttention()
         self.up2 = UpBlock()
         self.selfatt5 = SelfAttention()
 
-        self.out = ConvResidualBlock
-
-    def forward(self, x):
-        pass
+        self.out = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1)
 
     def initTimeEncoder(self):
         posMat = torch.zeros((max_time, embedding_dim))
@@ -121,3 +130,8 @@ class UNet(nn.Module):
                 else:
                     posMat[pos][i] = np.cos(pos / (10000 ** (i / embedding_dim)))
         return posMat
+
+    def forward(self, x):
+        pass
+
+    
