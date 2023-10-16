@@ -11,15 +11,6 @@ def extract_horses(filename, horses):
         if data[b'labels'][i] == 7:
             horses.append(data[b'data'][i])
 
-def squeeze01(image):
-    return image / 255
-
-def normalize(image):
-    return (image * 2) - 1
-
-def unnormalize(image):
-    return (image + 1) / 2
-
 def train(diffusion, lr, num_epochs, train_images):
     optimizer = optim.Adam(diffusion.model.parameters(), lr=lr)
     criterion = nn.MSELoss()
@@ -29,7 +20,7 @@ def train(diffusion, lr, num_epochs, train_images):
     for epoch in range(num_epochs):
         print(f"Epoch: {epoch}")
         # start by training on one at a time
-        for image in train_images:
+        for i, image in enumerate(train_images[:1000]):
             t = np.random.randint(1, diffusion.noising_steps)
             image_t, noise = diffusion.noise_image(image, t)
 
@@ -48,7 +39,9 @@ def train(diffusion, lr, num_epochs, train_images):
             else:
                 longLoss = 0.99 * longLoss + 0.01 * loss
             
-            print(f"Loss: {longLoss}")
+            print(f"Step {i} of {1000} Loss: {longLoss}")
+        
+        show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}")
 
 if __name__ == '__main__':
     horses = []
@@ -64,4 +57,5 @@ if __name__ == '__main__':
     horses = torch.tensor(reshaped, dtype=torch.float32)
 
     diffusion = Diffusion()
+    show_image(horses[0], save=True, name='original')
     train(diffusion, 0.00001, 10, horses)

@@ -29,7 +29,26 @@ class Diffusion:
     def generate(self, batch_size):
         self.model.eval()
         with torch.no_grad():
-            randomNoise = torch.randn(batch_size, 3, 32, 32)
+            image = torch.randn(batch_size, 3, 32, 32)
+            for step in range(999, -1, -1):
+                time = step
+                pred_noise = self.model(image, time)
+
+                alpha = self.alphas[time]
+                alpha_hat = self.alpha_hats[time]
+                beta = self.betas[time]
+                if time > 0:
+                    new_noise = torch.randn_like(image)
+                else:
+                    new_noise = torch.zeros_like(image)
+                
+                image = 1 / torch.sqrt(alpha) * (image - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * pred_noise) + torch.sqrt(beta) * new_noise
+            
+        self.model.train()
+        image = image[0].cpu().numpy()
+        print(image.shape)
+        return image
+
 
 
     
