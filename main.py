@@ -23,6 +23,8 @@ def unnormalize(image):
 def train(diffusion, lr, num_epochs, train_images):
     optimizer = optim.Adam(diffusion.model.parameters(), lr=lr)
     criterion = nn.MSELoss()
+
+    longLoss = None
     
     for epoch in range(num_epochs):
         print(f"Epoch: {epoch}")
@@ -31,6 +33,9 @@ def train(diffusion, lr, num_epochs, train_images):
             t = np.random.randint(1, diffusion.noising_steps)
             image_t, noise = diffusion.noise_image(image, t)
 
+            image_t = torch.unsqueeze(image_t, 0)
+            noise = torch.unsqueeze(noise, 0)
+
             pred_noise = diffusion.model(image_t, t)
             loss = criterion(noise, pred_noise)
 
@@ -38,7 +43,12 @@ def train(diffusion, lr, num_epochs, train_images):
             loss.backward()
             optimizer.step()
 
-            print(loss.item())
+            if longLoss is None:
+                longLoss = loss
+            else:
+                longLoss = 0.99 * longLoss + 0.01 * loss
+            
+            print(f"Loss: {longLoss}")
 
 if __name__ == '__main__':
     horses = []
@@ -54,15 +64,4 @@ if __name__ == '__main__':
     horses = torch.tensor(reshaped, dtype=torch.float32)
 
     diffusion = Diffusion()
-    train(diffusion, 0.0001, 10, horses)
-    print(horses.shape)
-
-    # d = Diffusion()
-    # noised2 = unnormalize(d.noise_image(normalize(horses[0]), 300))
-    # noised3 = unnormalize(d.noise_image(normalize(horses[0]), 500))
-    # noised4 = unnormalize(d.noise_image(normalize(horses[0]), 700))
-
-    # show_images_grid([horses[0], noised2, noised3, noised4])
-
-
-
+    train(diffusion, 0.00001, 10, horses)

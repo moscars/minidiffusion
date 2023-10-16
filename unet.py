@@ -48,6 +48,9 @@ class DownBlock(nn.Module):
         x = self.res2(x)
 
         emb = self.projectEmbedding(raw_emb)
+        emb = emb[:, None, None].expand(-1, x.shape[-2], x.shape[-1]).unsqueeze(0)
+
+        return x + emb
 
 class UpBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
@@ -64,12 +67,13 @@ class UpBlock(nn.Module):
         )
     
     def forward(self, x, skip_x, raw_emb):
-        x = self.upsample(x)
         x = torch.cat([skip_x, x], dim=1)
+        x = self.upsample(x)
         x = self.res1(x)
         x = self.res2(x)
 
         emb = self.projectEmbedding(raw_emb)
+        emb = emb[:, None, None].expand(-1, x.shape[-2], x.shape[-1]).unsqueeze(0)
 
         return x + emb
 
@@ -85,6 +89,7 @@ class SelfAttention(nn.Module):
         self.linear2 = nn.Linear(channels, channels)
     
     def forward(self, x):
+        x = x.view(-1, self.channels, self.size * self.size).swapaxes(1, 2)
         x_ln = self.ln1(x)
         x_mha, _ = self.mha(x_ln, x_ln, x_ln)
         x = x_mha + x
@@ -92,7 +97,7 @@ class SelfAttention(nn.Module):
         x_tmp = F.gelu(self.linear1(x_tmp))
         x_tmp = self.linear2(x_tmp)
         x = x + x_tmp
-        return x
+        return x.swapaxes(2, 1).view(-1, self.channels, self.size, self.size)
 
 class UNet(nn.Module):
     def __init__(self):
@@ -103,7 +108,7 @@ class UNet(nn.Module):
         self.inp = ConvResidualBlock(in_channels=3, out_channels=64, use_residual=False)
 
         self.down1 = DownBlock(in_channels=64, out_channels=128)
-        self.selfatt1 = SelfAttention(channels=128, size=32)
+        self.selfatt1 = SelfAttention(channels=128, size=16)
         self.down2 = DownBlock(in_channels=128, out_channels=256)
         self.selfatt2 = SelfAttention(channels=256, size=8)
 
@@ -113,7 +118,7 @@ class UNet(nn.Module):
         self.up1 = UpBlock(in_channels=512, out_channels=128)
         self.selfatt4 = SelfAttention(channels=128, size=16)
         self.up2 = UpBlock(in_channels=256, out_channels=64)
-        self.selfatt5 = SelfAttention(channels=64, size=64)
+        self.selfatt5 = SelfAttention(channels=64, size=32)
 
         self.out = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1)
 
