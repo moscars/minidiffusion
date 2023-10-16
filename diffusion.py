@@ -10,9 +10,9 @@ class Diffusion:
         self.beta_end = 0.02
         self.noising_steps = 1000
 
-        self.betas = np.linspace(self.beta_start, self.beta_end, self.noising_steps)
+        self.betas = torch.linspace(self.beta_start, self.beta_end, self.noising_steps)
         self.alphas = 1 - self.betas
-        self.alpha_hats = np.cumprod(self.alphas)
+        self.alpha_hats = torch.cumprod(self.alphas, dim=0)
 
         self.model = UNet()
 
@@ -20,11 +20,11 @@ class Diffusion:
         ''' 
         image: input image to be noised (3072,)
         '''
-        orignal_weight = np.sqrt(self.alpha_hats[target_t])
-        noise_weight = np.sqrt(1 - self.alphas[target_t])
-        noise = np.random.normal(0, 1, image.shape)
+        orignal_weight = torch.sqrt(self.alpha_hats[target_t])
+        noise_weight = torch.sqrt(1 - self.alphas[target_t])
+        noise = torch.randn(image.shape)
         image_t = orignal_weight * image + noise_weight * noise
-        return image_t
+        return image_t, noise
     
     def generate(self, batch_size):
         self.model.eval()

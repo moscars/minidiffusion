@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from diffusion import Diffusion
 from utils import *
 from torch import optim, nn
+import torch
 
 def extract_horses(filename, horses):
     data = unpickle(filename)
@@ -29,6 +30,7 @@ def train(diffusion, lr, num_epochs, train_images):
         for image in train_images:
             t = np.random.randint(1, diffusion.noising_steps)
             image_t, noise = diffusion.noise_image(image, t)
+
             pred_noise = diffusion.model(image_t, t)
             loss = criterion(noise, pred_noise)
 
@@ -48,6 +50,8 @@ if __name__ == '__main__':
     extract_horses('data/test_batch', horses)
 
     horses = np.array([normalize(squeeze01(x)) for x in horses])
+    reshaped = np.reshape(horses, (horses.shape[0], 3, 32, 32))
+    horses = torch.tensor(reshaped, dtype=torch.float32)
 
     diffusion = Diffusion()
     train(diffusion, 0.0001, 10, horses)

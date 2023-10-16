@@ -49,8 +49,6 @@ class DownBlock(nn.Module):
 
         emb = self.projectEmbedding(raw_emb)
 
-        return x + emb
-
 class UpBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(UpBlock, self).__init__()
@@ -104,18 +102,18 @@ class UNet(nn.Module):
         
         self.inp = ConvResidualBlock(in_channels=3, out_channels=64, use_residual=False)
 
-        self.down1 = DownBlock(in_channels=64, out_channels=128, time_emb=self.time_emb)
-        self.selfatt1 = SelfAttention()
-        self.down2 = DownBlock(in_channels=128, out_channels=256, time_emb=self.time_emb)
-        self.selfatt2 = SelfAttention()
+        self.down1 = DownBlock(in_channels=64, out_channels=128)
+        self.selfatt1 = SelfAttention(channels=128, size=32)
+        self.down2 = DownBlock(in_channels=128, out_channels=256)
+        self.selfatt2 = SelfAttention(channels=256, size=8)
 
         self.middle1 = ConvResidualBlock(in_channels=256, out_channels=512, use_residual=False)
         self.middle2 = ConvResidualBlock(in_channels=512, out_channels=256, use_residual=False)
 
         self.up1 = UpBlock(in_channels=512, out_channels=128)
-        self.selfatt4 = SelfAttention()
-        self.up2 = UpBlock()
-        self.selfatt5 = SelfAttention()
+        self.selfatt4 = SelfAttention(channels=128, size=16)
+        self.up2 = UpBlock(in_channels=256, out_channels=64)
+        self.selfatt5 = SelfAttention(channels=64, size=64)
 
         self.out = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1)
 
