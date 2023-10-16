@@ -58,4 +58,4 @@ if __name__ == '__main__':
 
     diffusion = Diffusion()
     show_image(horses[0], save=True, name='original')
-    train(diffusion, 0.00001, 10, horses)
+    train(diffusion, 0.0001, 10, horses)

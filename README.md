@@ -1,5 +1,3 @@
 # minidiffusion
 
-### Model architecture
-
-1. 
+Implementation of diffusion for image generation.

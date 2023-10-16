@@ -46,7 +46,6 @@ class Diffusion:
             
         self.model.train()
         image = image[0].cpu().numpy()
-        print(image.shape)
         return image
 
 
