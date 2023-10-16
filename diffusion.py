@@ -1,4 +1,7 @@
 import numpy as np
+from unet import UNet
+import torch
+from torch import optim, nn
 
 class Diffusion:
     def __init__(self):
@@ -11,6 +14,8 @@ class Diffusion:
         self.alphas = 1 - self.betas
         self.alpha_hats = np.cumprod(self.alphas)
 
+        self.model = UNet()
+
     def noise_image(self, image, target_t):
         ''' 
         image: input image to be noised (3072,)
@@ -20,5 +25,12 @@ class Diffusion:
         noise = np.random.normal(0, 1, image.shape)
         image_t = orignal_weight * image + noise_weight * noise
         return image_t
+    
+    def generate(self, batch_size):
+        self.model.eval()
+        with torch.no_grad():
+            randomNoise = torch.randn(batch_size, 3, 32, 32)
+
+
     
     
