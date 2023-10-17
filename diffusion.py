@@ -6,6 +6,7 @@ from torch import optim, nn
 class Diffusion:
     def __init__(self, device):
         # prepare for forward noising
+        self.device = device
         self.beta_start = 0.0001
         self.beta_end = 0.02
         self.noising_steps = 1000
@@ -35,7 +36,7 @@ class Diffusion:
     def generate(self, batch_size):
         self.model.eval()
         with torch.no_grad():
-            image = torch.randn(batch_size, 3, 32, 32)
+            image = torch.randn(batch_size, 3, 32, 32).to(self.device)
             for step in range(999, -1, -1):
                 time = step
                 pred_noise = self.model(image, time)
