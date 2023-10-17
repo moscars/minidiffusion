@@ -5,27 +5,36 @@ from utils import *
 from torch import optim, nn
 import torch
 
+device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
+print(f"Using device: {device}")
+
 def extract_horses(filename, horses):
     data = unpickle(filename)
     for i in range(len(data[b'labels'])):
         if data[b'labels'][i] == 7:
             horses.append(data[b'data'][i])
 
-def train(diffusion, lr, num_epochs, train_images):
+def train(diffusion, lr, num_epochs, train_images, batch_size):
     optimizer = optim.Adam(diffusion.model.parameters(), lr=lr)
     criterion = nn.MSELoss()
 
     longLoss = None
+
+    diffusion.model.to(device)
     
     for epoch in range(num_epochs):
         print(f"Epoch: {epoch}")
         # start by training on one at a time
-        for i, image in enumerate(train_images[:1000]):
-            t = np.random.randint(1, diffusion.noising_steps)
+        num_batches = len(train_images) // batch_size
+
+        for i in range(num_batches):
+            image = train_images[i * batch_size : (i + 1) * batch_size]
+            t = torch.randint(1, diffusion.noising_steps, (batch_size,))
+
             image_t, noise = diffusion.noise_image(image, t)
 
-            image_t = torch.unsqueeze(image_t, 0)
-            noise = torch.unsqueeze(noise, 0)
+            image_t = image_t.to(device)
+            noise = noise.to(device)
 
             pred_noise = diffusion.model(image_t, t)
             loss = criterion(noise, pred_noise)
@@ -35,11 +44,11 @@ def train(diffusion, lr, num_epochs, train_images):
             optimizer.step()
 
             if longLoss is None:
-                longLoss = loss
+                longLoss = loss.item()
             else:
-                longLoss = 0.99 * longLoss + 0.01 * loss
+                longLoss = 0.95 * longLoss + 0.05 * loss.item()
             
-            print(f"Step {i} of {1000} Loss: {longLoss}")
+            print(f"Step {i} of {num_batches} Long: {longLoss}, Current: {loss.item()}")
         
         show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}")
 
@@ -56,6 +65,6 @@ if __name__ == '__main__':
     reshaped = np.reshape(horses, (horses.shape[0], 3, 32, 32))
     horses = torch.tensor(reshaped, dtype=torch.float32)
 
-    diffusion = Diffusion()
+    diffusion = Diffusion(device=device)
     show_image(horses[0], save=True, name='original')
-    train(diffusion, 0.0001, 10, horses)
+    train(diffusion, 3e-4, 10, horses, batch_size=30)

@@ -4,7 +4,7 @@ import torch
 from torch import optim, nn
 
 class Diffusion:
-    def __init__(self):
+    def __init__(self, device):
         # prepare for forward noising
         self.beta_start = 0.0001
         self.beta_end = 0.02
@@ -14,15 +14,21 @@ class Diffusion:
         self.alphas = 1 - self.betas
         self.alpha_hats = torch.cumprod(self.alphas, dim=0)
 
-        self.model = UNet()
-
+        self.model = UNet(device)
+        
     def noise_image(self, image, target_t):
-        ''' 
-        image: input image to be noised (3072,)
         '''
+        image: (batch_size, 3, 32, 32)
+        target_t: (batch_size,)
+        '''
+
         orignal_weight = torch.sqrt(self.alpha_hats[target_t])
         noise_weight = torch.sqrt(1 - self.alphas[target_t])
         noise = torch.randn(image.shape)
+
+        orignal_weight = orignal_weight.view(-1, 1, 1, 1)
+        noise_weight = noise_weight.view(-1, 1, 1, 1)
+
         image_t = orignal_weight * image + noise_weight * noise
         return image_t, noise
     

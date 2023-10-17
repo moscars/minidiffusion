@@ -32,6 +32,7 @@ class ConvResidualBlock(nn.Module):
 class DownBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(DownBlock, self).__init__()
+        self.out_channels = out_channels
 
         self.maxPool = nn.MaxPool2d(kernel_size=2)
         self.res1 = ConvResidualBlock(in_channels, in_channels, use_residual=True)
@@ -48,13 +49,14 @@ class DownBlock(nn.Module):
         x = self.res2(x)
 
         emb = self.projectEmbedding(raw_emb)
-        emb = emb[:, None, None].expand(-1, x.shape[-2], x.shape[-1]).unsqueeze(0)
+        emb = emb.view(-1, self.out_channels, 1, 1)
 
         return x + emb
 
 class UpBlock(nn.Module):
     def __init__(self, in_channels, out_channels):
         super(UpBlock, self).__init__()
+        self.out_channels = out_channels
 
         # used as opposite of max pool
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
@@ -73,7 +75,7 @@ class UpBlock(nn.Module):
         x = self.res2(x)
 
         emb = self.projectEmbedding(raw_emb)
-        emb = emb[:, None, None].expand(-1, x.shape[-2], x.shape[-1]).unsqueeze(0)
+        emb = emb.view(-1, self.out_channels, 1, 1)
 
         return x + emb
 
@@ -100,10 +102,11 @@ class SelfAttention(nn.Module):
         return x.swapaxes(2, 1).view(-1, self.channels, self.size, self.size)
 
 class UNet(nn.Module):
-    def __init__(self):
+    def __init__(self, device):
         super(UNet, self).__init__()
 
         self.time_emb = self.initTimeEncoder()
+        self.time_emb = self.time_emb.to(device)
         
         self.inp = ConvResidualBlock(in_channels=3, out_channels=64, use_residual=False)
 
