@@ -48,7 +48,7 @@ class Diffusion:
                     new_noise = torch.randn_like(image)
                 else:
                     new_noise = torch.zeros_like(image)
-                
+
                 image = 1 / torch.sqrt(alpha) * (image - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * pred_noise) + torch.sqrt(beta) * new_noise
             
         self.model.train()

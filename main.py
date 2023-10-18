@@ -15,13 +15,17 @@ def extract_horses(filename, horses):
             horses.append(data[b'data'][i])
 
 def train(diffusion, lr, num_epochs, train_images, batch_size):
-    optimizer = optim.Adam(diffusion.model.parameters(), lr=lr)
     criterion = nn.MSELoss()
-
     longLoss = None
 
+    # load from state
     diffusion.model.to(device)
-    
+    optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
+    # diffusion.model.load_state_dict(torch.load('model_0.pt', map_location=device))
+    # optimizer.load_state_dict(torch.load('optimizer_0.pt', map_location=device))
+
+    diffusion.model.train()
+
     for epoch in range(num_epochs):
         print(f"Epoch: {epoch}")
         # start by training on one at a time
@@ -44,11 +48,16 @@ def train(diffusion, lr, num_epochs, train_images, batch_size):
             optimizer.step()
 
             if longLoss is None:
-                longLoss = loss.item()
+                longLoss = loss.item() 
             else:
-                longLoss = 0.95 * longLoss + 0.05 * loss.item()
+                longLoss = 0.98 * longLoss + 0.02 * loss.item()
             
-            print(f"Step {i} of {num_batches} Long: {longLoss}, Current: {loss.item()}")
+            if i % 5 == 0:
+                print(f"Step {i} of {num_batches} Long: {longLoss}, Current: {loss.item()}")
+        
+        if epoch > 0 and epoch % 10 == 0:
+            torch.save(diffusion.model.state_dict(), f"model_{epoch}.pt")
+            torch.save(optimizer.state_dict(), f"optimizer_{epoch}.pt")
         
         show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}")
 
@@ -67,4 +76,4 @@ if __name__ == '__main__':
 
     diffusion = Diffusion(device=device)
     show_image(horses[0], save=True, name='original')
-    train(diffusion, 3e-4, 10, horses, batch_size=30)
+    train(diffusion, 3e-4, 500, horses, batch_size=30)
