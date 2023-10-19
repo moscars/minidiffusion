@@ -75,5 +75,4 @@ if __name__ == '__main__':
     horses = torch.tensor(reshaped, dtype=torch.float32)
 
     diffusion = Diffusion(device=device)
-    show_image(horses[0], save=True, name='original')
     train(diffusion, 3e-4, 500, horses, batch_size=30)

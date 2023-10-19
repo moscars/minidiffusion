@@ -69,8 +69,8 @@ class UpBlock(nn.Module):
         )
     
     def forward(self, x, skip_x, raw_emb):
-        x = torch.cat([skip_x, x], dim=1)
         x = self.upsample(x)
+        x = torch.cat([skip_x, x], dim=1)
         x = self.res1(x)
         x = self.res2(x)
 
@@ -107,6 +107,7 @@ class UNet(nn.Module):
 
         self.time_emb = self.initTimeEncoder()
         self.time_emb = self.time_emb.to(device)
+        self.time_emb.requires_grad = False
         
         self.inp = ConvResidualBlock(in_channels=3, out_channels=64, use_residual=False)
 
@@ -115,12 +116,12 @@ class UNet(nn.Module):
         self.down2 = DownBlock(in_channels=128, out_channels=256)
         self.selfatt2 = SelfAttention(channels=256, size=8)
 
-        self.middle1 = ConvResidualBlock(in_channels=256, out_channels=512, use_residual=False)
-        self.middle2 = ConvResidualBlock(in_channels=512, out_channels=256, use_residual=False)
+        self.middle1 = ConvResidualBlock(in_channels=256, out_channels=256, use_residual=False)
+        self.middle2 = ConvResidualBlock(in_channels=256, out_channels=128, use_residual=False)
 
-        self.up1 = UpBlock(in_channels=512, out_channels=128)
-        self.selfatt4 = SelfAttention(channels=128, size=16)
-        self.up2 = UpBlock(in_channels=256, out_channels=64)
+        self.up1 = UpBlock(in_channels=256, out_channels=64)
+        self.selfatt4 = SelfAttention(channels=64, size=16)
+        self.up2 = UpBlock(in_channels=128, out_channels=64)
         self.selfatt5 = SelfAttention(channels=64, size=32)
 
         self.out = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1)
@@ -138,8 +139,8 @@ class UNet(nn.Module):
     def forward(self, x, t):
         t = self.time_emb[t]
 
-        x = self.inp(x)
-        x2 = self.down1(x, t)
+        x1 = self.inp(x)
+        x2 = self.down1(x1, t)
         x2 = self.selfatt1(x2)
         x3 = self.down2(x2, t)
         x3 = self.selfatt2(x3)
@@ -147,9 +148,9 @@ class UNet(nn.Module):
         x = self.middle1(x3)
         x = self.middle2(x)
 
-        x = self.up1(x, x3, t)
+        x = self.up1(x, x2, t)
         x = self.selfatt4(x)
-        x = self.up2(x, x2, t)
+        x = self.up2(x, x1, t)
         x = self.selfatt5(x)
 
         x = self.out(x)
