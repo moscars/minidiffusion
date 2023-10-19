@@ -50,10 +50,10 @@ def train(diffusion, lr, num_epochs, train_images, batch_size):
             if longLoss is None:
                 longLoss = loss.item() 
             else:
-                longLoss = 0.98 * longLoss + 0.02 * loss.item()
+                longLoss = 0.99 * longLoss + 0.01 * loss.item()
             
             if i % 5 == 0:
-                print(f"Step {i} of {num_batches} Long: {longLoss}, Current: {loss.item()}")
+                print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
         
         if epoch > 0 and epoch % 10 == 0:
             torch.save(diffusion.model.state_dict(), f"model_{epoch}.pt")
@@ -75,4 +75,4 @@ if __name__ == '__main__':
     horses = torch.tensor(reshaped, dtype=torch.float32)
 
     diffusion = Diffusion(device=device)
-    train(diffusion, 3e-4, 500, horses, batch_size=30)
+    train(diffusion, 3e-4, 500, horses, batch_size=12)
