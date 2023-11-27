@@ -18,23 +18,15 @@ class ConvResidualBlock(nn.Module):
         self.gn2 = nn.GroupNorm(1, out_channels)
 
     def forward(self, x):
+        x1 = self.conv1(x)
+        x1 = self.gn1(x1)
+        x1 = F.gelu(x1)
+        x1 = self.conv2(x1)
+        x1 = self.gn2(x1)
 
         if self.use_residual:
-            x1 = self.conv1(x)
-            x1 = self.gn1(x1)
-            x1 = F.gelu(x1)
-            x1 = self.conv2(x1)
-            x1 = self.gn2(x1)
-
             return F.gelu(x1 + x)
-        
         else:
-            x1 = self.conv1(x)
-            x1 = self.gn1(x1)
-            x1 = F.gelu(x1)
-            x1 = self.conv2(x1)
-            x1 = self.gn2(x1)
-
             return x1
 
 class DownBlock(nn.Module):
