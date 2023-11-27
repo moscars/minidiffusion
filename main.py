@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from diffusion import Diffusion
+from ema import ExponentialMovingAverage
 from utils import *
 from torch import optim, nn
 import torch
@@ -23,6 +24,7 @@ def train(diffusion, lr, num_epochs, train_images, batch_size):
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
     # diffusion.model.load_state_dict(torch.load('model_0.pt', map_location=device))
     # optimizer.load_state_dict(torch.load('optimizer_0.pt', map_location=device))
+    ema = ExponentialMovingAverage(0.99, diffusion.model)
 
     diffusion.model.train()
 
@@ -46,21 +48,27 @@ def train(diffusion, lr, num_epochs, train_images, batch_size):
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+            ema.update()
 
             if longLoss is None:
                 longLoss = loss.item() 
             else:
                 longLoss = 0.995 * longLoss + 0.005 * loss.item()
             
-            if i % 10 == 0:
+            if i % 50 == 0:
                 print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
         
-        if epoch > 0 and epoch % 20 == 0:
+        if epoch > 0 and epoch % 40 == 0:
             torch.save(diffusion.model.state_dict(), f"model_{epoch}.pt")
             torch.save(optimizer.state_dict(), f"optimizer_{epoch}.pt")
 
-        if epoch > 0 and epoch % 10 == 0:
-            show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}")
+        if epoch > 0 and epoch % 40 == 0:
+            show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}_1")
+            show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}_2")
+            ema_model = ema.getEMAModel()
+            show_image(ema_model.generate(1), save=True, name=f"EMA Epoch {epoch}_1")
+            show_image(ema_model.generate(1), save=True, name=f"EMA Epoch {epoch}_2")
+
 
 if __name__ == '__main__':
     horses = []
