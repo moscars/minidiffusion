@@ -50,16 +50,17 @@ def train(diffusion, lr, num_epochs, train_images, batch_size):
             if longLoss is None:
                 longLoss = loss.item() 
             else:
-                longLoss = 0.99 * longLoss + 0.01 * loss.item()
+                longLoss = 0.995 * longLoss + 0.005 * loss.item()
             
-            if i % 5 == 0:
+            if i % 10 == 0:
                 print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
         
-        if epoch > 0 and epoch % 10 == 0:
+        if epoch > 0 and epoch % 20 == 0:
             torch.save(diffusion.model.state_dict(), f"model_{epoch}.pt")
             torch.save(optimizer.state_dict(), f"optimizer_{epoch}.pt")
-        
-        show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}")
+
+        if epoch > 0 and epoch % 10 == 0:
+            show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}")
 
 if __name__ == '__main__':
     horses = []
