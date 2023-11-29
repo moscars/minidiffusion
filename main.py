@@ -62,12 +62,10 @@ def train(diffusion, lr, num_epochs, train_images, batch_size):
             torch.save(diffusion.model.state_dict(), f"model_{epoch}.pt")
             torch.save(optimizer.state_dict(), f"optimizer_{epoch}.pt")
 
-        if epoch > 0 and epoch % 40 == 0:
-            show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}_1")
-            show_image(diffusion.generate(1), save=True, name=f"Epoch {epoch}_2")
+        if epoch > 0 and epoch % 20 == 0:
+            show_4_images(diffusion.generate(4), save=True, name=f"Epoch_{epoch}")
             ema_model = ema.getEMAModel()
-            show_image(ema_model.generate(1), save=True, name=f"EMA Epoch {epoch}_1")
-            show_image(ema_model.generate(1), save=True, name=f"EMA Epoch {epoch}_2")
+            show_4_images(ema_model.generate(4), save=True, name=f"EMA_Epoch_{epoch}")
 
 
 if __name__ == '__main__':

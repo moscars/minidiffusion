@@ -52,8 +52,8 @@ class Diffusion:
                 image = 1 / torch.sqrt(alpha) * (image - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * pred_noise) + torch.sqrt(beta) * new_noise
             
         self.model.train()
-        image = image[0].cpu().numpy()
-        return image
+
+        return image.cpu().numpy()
 
 
 
