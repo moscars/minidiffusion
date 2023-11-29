@@ -9,13 +9,20 @@ import torch
 device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
 print(f"Using device: {device}")
 
-def extract_horses(filename, horses):
+def extract_horses(filename, horses, labels):
     data = unpickle(filename)
     for i in range(len(data[b'labels'])):
         if data[b'labels'][i] == 7:
             horses.append(data[b'data'][i])
+            labels.append(data[b'labels'][i])
 
-def train(diffusion, lr, num_epochs, train_images, batch_size):
+def extract_all_data(filename, images, labels):
+    data = unpickle(filename)
+    for i in range(len(data[b'labels'])):
+        images.append(data[b'data'][i])
+        labels.append(data[b'labels'][i])
+
+def train(diffusion, lr, num_epochs, train_images, train_labels, batch_size):
     criterion = nn.MSELoss()
     longLoss = None
 
@@ -35,13 +42,16 @@ def train(diffusion, lr, num_epochs, train_images, batch_size):
 
         for i in range(num_batches):
             image = train_images[i * batch_size : (i + 1) * batch_size]
+            #labels = train_labels[i * batch_size : (i + 1) * batch_size]
             t = torch.randint(1, diffusion.noising_steps, (batch_size,))
 
             image_t, noise = diffusion.noise_image(image, t)
 
             image_t = image_t.to(device)
             noise = noise.to(device)
+            #labels = labels.to(device)
 
+            #pred_noise = diffusion.model(image_t, t, labels)
             pred_noise = diffusion.model(image_t, t)
             loss = criterion(noise, pred_noise)
 
@@ -65,21 +75,25 @@ def train(diffusion, lr, num_epochs, train_images, batch_size):
         if epoch > 0 and epoch % 20 == 0:
             show_4_images(diffusion.generate(4), save=True, name=f"Epoch_{epoch}")
             ema_model = ema.getEMAModel()
-            show_4_images(ema_model.generate(4), save=True, name=f"EMA_Epoch_{epoch}")
+            tmpDiff = Diffusion(device=device, num_classes=10)
+            tmpDiff.model = ema_model
+            show_4_images(tmpDiff.generate(4), save=True, name=f"EMA_Epoch_{epoch}")
 
 
 if __name__ == '__main__':
-    horses = []
-    extract_horses('data/data_batch_1', horses)
-    extract_horses('data/data_batch_2', horses)
-    extract_horses('data/data_batch_3', horses)
-    extract_horses('data/data_batch_4', horses)
-    extract_horses('data/data_batch_5', horses)
-    extract_horses('data/test_batch', horses)
+    images = []
+    labels = []
+    extract_horses('data/data_batch_1', images, labels)
+    extract_horses('data/data_batch_2', images, labels)
+    extract_horses('data/data_batch_3', images, labels)
+    extract_horses('data/data_batch_4', images, labels)
+    extract_horses('data/data_batch_5', images, labels)
+    extract_horses('data/test_batch', images, labels)
 
-    horses = np.array([normalize(squeeze01(x)) for x in horses])
-    reshaped = np.reshape(horses, (horses.shape[0], 3, 32, 32))
-    horses = torch.tensor(reshaped, dtype=torch.float32)
+    images = np.array([normalize(squeeze01(x)) for x in images])
+    reshaped = np.reshape(images, (images.shape[0], 3, 32, 32))
+    images = torch.tensor(reshaped, dtype=torch.float32)
+    labels = torch.tensor(labels, dtype=torch.int32)
 
-    diffusion = Diffusion(device=device)
-    train(diffusion, 3e-4, 500, horses, batch_size=12)
+    diffusion = Diffusion(device=device, num_classes=10)
+    train(diffusion, 3e-4, 500, images, labels, batch_size=12)

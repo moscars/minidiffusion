@@ -102,8 +102,10 @@ class SelfAttention(nn.Module):
         return x.swapaxes(2, 1).view(-1, self.channels, self.size, self.size)
 
 class UNet(nn.Module):
-    def __init__(self, device):
+    def __init__(self, device, num_classes):
         super(UNet, self).__init__()
+
+        self.label_embedding = nn.Embedding(num_classes, embedding_dim)
 
         self.time_emb = self.initTimeEncoder()
         self.time_emb = self.time_emb.to(device)
@@ -141,15 +143,13 @@ class UNet(nn.Module):
                     posMat[pos][i] = np.cos(pos / (10000 ** (i / embedding_dim)))
         return posMat
 
-    def forward(self, x, t):
-        # if type(t) == int:
-        #     t = torch.tensor([t])
-        # t = t.unsqueeze(-1).type(torch.float)
-        # t = t.to(self.device)
-        # t = self.pos_encoding(t, self.time_dim)
-
+    def forward(self, x, t, labels=None):
         t = self.time_emb[t]
 
+        if labels is not None:
+            label_emb = self.label_embedding(labels)
+            t += label_emb
+        
         x1 = self.inp(x)
         x2 = self.down1(x1, t)
         x2 = self.selfatt1(x2)
