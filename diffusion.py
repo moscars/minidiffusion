@@ -14,6 +14,7 @@ class Diffusion:
         self.betas = torch.linspace(self.beta_start, self.beta_end, self.noising_steps)
         self.alphas = 1 - self.betas
         self.alpha_hats = torch.cumprod(self.alphas, dim=0)
+        self.alpha_hats = self.alpha_hats.to(device)
 
         self.model = UNet(device=device, num_classes=num_classes)
         
@@ -26,6 +27,7 @@ class Diffusion:
         orignal_weight = torch.sqrt(self.alpha_hats[target_t])
         noise_weight = torch.sqrt(1 - self.alpha_hats[target_t])
         noise = torch.randn(image.shape)
+        noise = noise.to(self.device)
 
         orignal_weight = orignal_weight.view(-1, 1, 1, 1)
         noise_weight = noise_weight.view(-1, 1, 1, 1)

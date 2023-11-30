@@ -2,12 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from diffusion import Diffusion
 from ema import ExponentialMovingAverage
+from dataset import TorchDataset
 from utils import *
 from torch import optim, nn
+from torch.utils.data import DataLoader
 import torch
+import time
 
-device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
-print(f"Using device: {device}")
 
 def extract_horses(filename, horses, labels):
     data = unpickle(filename)
@@ -33,6 +34,8 @@ def train(diffusion, lr, num_epochs, train_images, train_labels, batch_size):
     # optimizer.load_state_dict(torch.load('optimizer_0.pt', map_location=device))
     ema = ExponentialMovingAverage(0.99, diffusion.model)
 
+    train_loader = DataLoader(train_images, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
+
     diffusion.model.train()
 
     for epoch in range(num_epochs):
@@ -40,16 +43,16 @@ def train(diffusion, lr, num_epochs, train_images, train_labels, batch_size):
         # start by training on one at a time
         num_batches = len(train_images) // batch_size
 
-        for i in range(num_batches):
-            image = train_images[i * batch_size : (i + 1) * batch_size]
-            #labels = train_labels[i * batch_size : (i + 1) * batch_size]
-            t = torch.randint(1, diffusion.noising_steps, (batch_size,))
+        for i, image in enumerate(train_loader):
+            image = image.to(device)
+            # move this to the GPU
 
+            current_batch_size = image.shape[0]
+            
+            t = torch.randint(1, diffusion.noising_steps, (current_batch_size,))
+            t = t.to(device)
+            
             image_t, noise = diffusion.noise_image(image, t)
-
-            image_t = image_t.to(device)
-            noise = noise.to(device)
-            #labels = labels.to(device)
 
             #pred_noise = diffusion.model(image_t, t, labels)
             pred_noise = diffusion.model(image_t, t)
@@ -81,6 +84,11 @@ def train(diffusion, lr, num_epochs, train_images, train_labels, batch_size):
 
 
 if __name__ == '__main__':
+    device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
+    print(f"Using device: {device}")
+
+    start = time.time()
+
     images = []
     labels = []
     extract_horses('data/data_batch_1', images, labels)
@@ -95,5 +103,10 @@ if __name__ == '__main__':
     images = torch.tensor(reshaped, dtype=torch.float32)
     labels = torch.tensor(labels, dtype=torch.int32)
 
+    dataset = TorchDataset(images)
+
     diffusion = Diffusion(device=device, num_classes=10)
-    train(diffusion, 3e-4, 500, images, labels, batch_size=12)
+    train(diffusion, 6e-4, 5, dataset, labels, batch_size=32)
+
+    end = time.time()
+    print(f"Total time: {end - start}")
