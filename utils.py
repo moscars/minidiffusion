@@ -8,10 +8,15 @@ def unpickle(file):
     return dict
 
 def format_image_data(data_row):
+    print("Coming in", data_row.shape)
     data_row = np.array(data_row)
     data_row = np.clip(data_row, -1, 1)
     data_row = unnormalize(data_row)
-    image = data_row.transpose(1, 2, 0)
+    # for small images
+    #image = data_row.transpose(1, 2, 0)
+    # for 96x96 dataset
+    image = data_row.transpose(2, 1, 0)
+    print("Coming out", image.shape)
     return image
 
 def show_image(data_row, save=False, name=None):
@@ -34,7 +39,7 @@ def show_4_images(data, save=False, name=None):
         ax.axis('off')  # Hide axes for better visualization
     
     if save:
-        plt.savefig(f'images/image_{name}.png')
+        plt.savefig(f'label_img/{name}.png')
         plt.close()
     else:
         plt.show()

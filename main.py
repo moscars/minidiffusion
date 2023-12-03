@@ -23,19 +23,34 @@ def extract_all_data(filename, images, labels, classes):
             images.append(data[b'data'][i])
             labels.append(data[b'labels'][i])
 
+def read_binary_data(filename, labelfile, images, labels, classes):
+    with open(filename, 'rb') as f:
+        everything = np.fromfile(f, dtype=np.uint8)
+        img = np.reshape(everything, (-1, 3, 96, 96))
+        img = [img[i] for i in range(len(img))]
+    
+    with open(labelfile, 'rb') as f:
+        labs = np.fromfile(f, dtype=np.uint8)
+
+    for i, pic in enumerate(img):
+        if labs[i] in classes:
+            images.append(pic)
+
+    for lab in labs:
+        if lab in classes:
+            labels.append(lab)
+
 def train(diffusion, lr, num_epochs, dataset, batch_size):
     criterion = nn.MSELoss()
     longLoss = None
 
+    print(f"Number of parameters: {diffusion.get_num_params()}")
     # load from state
     diffusion.model.to(device)
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
     # diffusion.model.load_state_dict(torch.load('model_160.pt', map_location=device))
     # optimizer.load_state_dict(torch.load('optimizer_160.pt', map_location=device))
     ema = ExponentialMovingAverage(0.995, diffusion.model)
-
-    show_4_images(diffusion.generate(4, 1), save=True, name=f"1_Label_Epoch_0") # airplaine
-    exit()
 
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
 
@@ -78,19 +93,19 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
             if i % 30 == 0:
                 print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
         
-        if epoch > 0 and epoch % 40 == 0:
+        if epoch > 0 and epoch % 20 == 0:
             torch.save(diffusion.model.state_dict(), f"label_model_{epoch}.pt")
             torch.save(optimizer.state_dict(), f"label_optimizer_{epoch}.pt")
 
         if epoch > 0 and epoch % 10 == 0:
-            show_4_images(diffusion.generate(4, 1), save=True, name=f"1_Label_Epoch_{epoch}") # airplaine
+            show_4_images(diffusion.generate(4, 1), save=True, name=f"1_Label_Epoch_{epoch}") # airplane
             show_4_images(diffusion.generate(4, 4), save=True, name=f"4_Label_Epoch_{epoch}") # deer
             show_4_images(diffusion.generate(4, 7), save=True, name=f"7_Label_Epoch_{epoch}") # horse
             show_4_images(diffusion.generate(4, 8), save=True, name=f"8_Label_Epoch_{epoch}") # ship
             ema_model = ema.getEMAModel()
             tmpDiff = Diffusion(device=device, num_classes=10)
             tmpDiff.model = ema_model
-            show_4_images(tmpDiff.generate(4, 1), save=True, name=f"1_Label_EMA_Epoch_{epoch}") # airplaine
+            show_4_images(tmpDiff.generate(4, 1), save=True, name=f"1_Label_EMA_Epoch_{epoch}") # airplane
             show_4_images(tmpDiff.generate(4, 4), save=True, name=f"4_Label_EMA_Epoch_{epoch}") # deer
             show_4_images(tmpDiff.generate(4, 7), save=True, name=f"7_Label_EMA_Epoch_{epoch}") # horse
             show_4_images(tmpDiff.generate(4, 8), save=True, name=f"8_Label_EMA_Epoch_{epoch}") # ship
@@ -101,28 +116,28 @@ if __name__ == '__main__':
     print(f"Using device: {device}")
 
     start = time.time()
-
-    classes = set([1, 4, 7, 8])
+    #classes = set([1, 4, 7, 8])
+    classes = set([2, 3, 5, 9])
 
     images = []
     labels = []
-    extract_all_data('data/data_batch_1', images, labels, classes)
-    extract_all_data('data/data_batch_2', images, labels, classes)
-    extract_all_data('data/data_batch_3', images, labels, classes)
-    extract_all_data('data/data_batch_4', images, labels, classes)
-    extract_all_data('data/data_batch_5', images, labels, classes)
-    extract_all_data('data/test_batch', images, labels, classes)
-
+    # extract_all_data('data/data_batch_1', images, labels, classes)
+    # extract_all_data('data/data_batch_2', images, labels, classes)
+    # extract_all_data('data/data_batch_3', images, labels, classes)
+    # extract_all_data('data/data_batch_4', images, labels, classes)
+    # extract_all_data('data/data_batch_5', images, labels, classes)
+    # extract_all_data('data/test_batch', images, labels, classes)
+    read_binary_data('stl10_binary/train_X.bin', 'stl10_binary/train_Y.bin', images, labels, classes)
     images = np.array([normalize(squeeze01(x)) for x in images])
-    reshaped = np.reshape(images, (images.shape[0], 3, 32, 32))
-    images = torch.tensor(reshaped, dtype=torch.float32)
+
+    images = torch.tensor(images, dtype=torch.float32)
     labels = torch.tensor(labels, dtype=torch.int32)
 
     dataset = TorchDataset(images, labels)
 
-    print(f"Length of dataset: {len(dataset)}\n")
+    print(f"Length of dataset: {len(dataset)}")
 
-    diffusion = Diffusion(device=device, num_classes=10)
+    diffusion = Diffusion(device=device, num_classes=10, img_size=96)
     train(diffusion, 6e-4, 500, dataset, batch_size=32)
 
     end = time.time()

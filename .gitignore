@@ -13,6 +13,7 @@ resources.txt
 data/*
 *.pt
 *.txt
+stl10_binary/*
 
 # Distribution / packaging
 .Python

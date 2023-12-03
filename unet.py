@@ -102,10 +102,11 @@ class SelfAttention(nn.Module):
         return x.swapaxes(2, 1).view(-1, self.channels, self.size, self.size)
 
 class UNet(nn.Module):
-    def __init__(self, device, num_classes):
+    def __init__(self, device, num_classes, img_size=32):
         super(UNet, self).__init__()
 
         self.label_embedding = nn.Embedding(num_classes, embedding_dim)
+        self.img_size = img_size
 
         self.time_emb = self.initTimeEncoder()
         self.time_emb = self.time_emb.to(device)
@@ -114,22 +115,22 @@ class UNet(nn.Module):
         self.inp = ConvResidualBlock(in_channels=3, out_channels=64, use_residual=False)
 
         self.down1 = DownBlock(in_channels=64, out_channels=128)
-        self.selfatt1 = SelfAttention(channels=128, size=16)
+        self.selfatt1 = SelfAttention(channels=128, size=self.img_size//2)
         self.down2 = DownBlock(in_channels=128, out_channels=256)
-        self.selfatt2 = SelfAttention(channels=256, size=8)
+        self.selfatt2 = SelfAttention(channels=256, size=self.img_size//4)
         self.down3 = DownBlock(in_channels=256, out_channels=256)
-        self.selfatt3 = SelfAttention(channels=256, size=4)
+        self.selfatt3 = SelfAttention(channels=256, size=self.img_size//8)
 
         self.middle1 = ConvResidualBlock(in_channels=256, out_channels=512, use_residual=False)
         self.middle2 = ConvResidualBlock(in_channels=512, out_channels=512, use_residual=False)
         self.middle3 = ConvResidualBlock(in_channels=512, out_channels=256, use_residual=False)
 
         self.up1 = UpBlock(in_channels=512, out_channels=128)
-        self.selfatt4 = SelfAttention(channels=128, size=8)
+        self.selfatt4 = SelfAttention(channels=128, size=self.img_size//4)
         self.up2 = UpBlock(in_channels=256, out_channels=64)
-        self.selfatt5 = SelfAttention(channels=64, size=16)
+        self.selfatt5 = SelfAttention(channels=64, size=self.img_size//2)
         self.up3 = UpBlock(in_channels=128, out_channels=64)
-        self.selfatt6 = SelfAttention(channels=64, size=32)
+        self.selfatt6 = SelfAttention(channels=64, size=self.img_size)
 
         self.out = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1)
 

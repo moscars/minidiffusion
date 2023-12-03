@@ -4,7 +4,7 @@ import torch
 from torch import optim, nn
 
 class Diffusion:
-    def __init__(self, device, num_classes):
+    def __init__(self, device, num_classes, img_size=32):
         # prepare for forward noising
         self.device = device
         self.beta_start = 0.0001
@@ -18,7 +18,10 @@ class Diffusion:
         self.alphas = self.alphas.to(device)
         self.betas = self.betas.to(device)
 
-        self.model = UNet(device=device, num_classes=num_classes)
+        self.model = UNet(device=device, num_classes=num_classes, img_size=img_size)
+
+    def get_num_params(self):
+        return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
         
     def noise_image(self, image, target_t):
         '''
