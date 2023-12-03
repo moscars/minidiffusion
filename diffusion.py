@@ -7,6 +7,7 @@ class Diffusion:
     def __init__(self, device, num_classes, img_size=32):
         # prepare for forward noising
         self.device = device
+        self.image_size = img_size
         self.beta_start = 0.0001
         self.beta_end = 0.02
         self.noising_steps = 1000
@@ -18,7 +19,7 @@ class Diffusion:
         self.alphas = self.alphas.to(device)
         self.betas = self.betas.to(device)
 
-        self.model = UNet(device=device, num_classes=num_classes, img_size=img_size)
+        self.model = UNet(device=device, num_classes=num_classes, img_size=self.image_size)
 
     def get_num_params(self):
         return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
@@ -47,7 +48,7 @@ class Diffusion:
             label = torch.full((batch_size,), class_to_gen)
             label = label.to(self.device)
 
-            image = torch.randn(batch_size, 3, 32, 32).to(self.device)
+            image = torch.randn(batch_size, 3, self.image_size, self.image_size).to(self.device)
             for step in range(999, -1, -1):
                 time = torch.full((batch_size,), step)
                 uncond_pred_noise = self.model(image, time)
@@ -75,7 +76,7 @@ class Diffusion:
             
         self.model.train()
 
-        return image.cpu().numpy()
+        return image.cpu().numpy()[0]
 
 
 

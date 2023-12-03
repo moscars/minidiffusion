@@ -48,6 +48,7 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
     # load from state
     diffusion.model.to(device)
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
+
     # diffusion.model.load_state_dict(torch.load('model_160.pt', map_location=device))
     # optimizer.load_state_dict(torch.load('optimizer_160.pt', map_location=device))
     ema = ExponentialMovingAverage(0.995, diffusion.model)
@@ -90,25 +91,25 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
             else:
                 longLoss = 0.998 * longLoss + 0.002 * loss.item()
             
-            if i % 30 == 0:
+            if i % 50 == 0:
                 print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
         
-        if epoch > 0 and epoch % 20 == 0:
-            torch.save(diffusion.model.state_dict(), f"label_model_{epoch}.pt")
-            torch.save(optimizer.state_dict(), f"label_optimizer_{epoch}.pt")
+        if epoch > 0 and epoch % 5 == 0:
+            torch.save(diffusion.model.state_dict(), f"L_label_model_{epoch}.pt")
+            torch.save(optimizer.state_dict(), f"L_label_optimizer_{epoch}.pt")
 
-        if epoch > 0 and epoch % 10 == 0:
-            show_4_images(diffusion.generate(4, 1), save=True, name=f"1_Label_Epoch_{epoch}") # airplane
-            show_4_images(diffusion.generate(4, 4), save=True, name=f"4_Label_Epoch_{epoch}") # deer
-            show_4_images(diffusion.generate(4, 7), save=True, name=f"7_Label_Epoch_{epoch}") # horse
-            show_4_images(diffusion.generate(4, 8), save=True, name=f"8_Label_Epoch_{epoch}") # ship
+        if epoch > 0 and epoch % 5 == 0:
+            show_image(diffusion.generate(1, 2), save=True, name=f"L_1_Label_Epoch_{epoch}") # airplane
+            show_image(diffusion.generate(1, 3), save=True, name=f"L_4_Label_Epoch_{epoch}") # deer
+            show_image(diffusion.generate(1, 5), save=True, name=f"L_7_Label_Epoch_{epoch}") # horse
+            show_image(diffusion.generate(1, 9), save=True, name=f"L_8_Label_Epoch_{epoch}") # ship
             ema_model = ema.getEMAModel()
             tmpDiff = Diffusion(device=device, num_classes=10)
             tmpDiff.model = ema_model
-            show_4_images(tmpDiff.generate(4, 1), save=True, name=f"1_Label_EMA_Epoch_{epoch}") # airplane
-            show_4_images(tmpDiff.generate(4, 4), save=True, name=f"4_Label_EMA_Epoch_{epoch}") # deer
-            show_4_images(tmpDiff.generate(4, 7), save=True, name=f"7_Label_EMA_Epoch_{epoch}") # horse
-            show_4_images(tmpDiff.generate(4, 8), save=True, name=f"8_Label_EMA_Epoch_{epoch}") # ship
+            show_image(tmpDiff.generate(1, 2), save=True, name=f"L_1_Label_EMA_Epoch_{epoch}") # airplane
+            show_image(tmpDiff.generate(1, 3), save=True, name=f"L_4_Label_EMA_Epoch_{epoch}") # deer
+            show_image(tmpDiff.generate(1, 5), save=True, name=f"L_7_Label_EMA_Epoch_{epoch}") # horse
+            show_image(tmpDiff.generate(1, 9), save=True, name=f"L_8_Label_EMA_Epoch_{epoch}") # ship
 
 
 if __name__ == '__main__':
@@ -138,7 +139,7 @@ if __name__ == '__main__':
     print(f"Length of dataset: {len(dataset)}")
 
     diffusion = Diffusion(device=device, num_classes=10, img_size=96)
-    train(diffusion, 6e-4, 500, dataset, batch_size=32)
+    train(diffusion, 5e-5, 500, dataset, batch_size=1)
 
     end = time.time()
     print(f"Total time: {end - start}")
