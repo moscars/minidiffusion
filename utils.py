@@ -68,7 +68,7 @@ def show_4_images(data, save=False, name=None):
         ax.axis('off')  # Hide axes for better visualization
     
     if save:
-        plt.savefig(f'label_img/{name}.png')
+        plt.savefig(f'images/{name}.png')
         plt.close()
     else:
         plt.show()

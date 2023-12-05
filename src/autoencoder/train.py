@@ -8,11 +8,17 @@ from vae import VariationalAutoEncoder
 from utils import *
 from torch import optim, nn
 from torch.utils.data import DataLoader
+import torch.nn.functional as F
 import torch
 import time
 
+def vae_loss(recon_x, x, mu, logvar):
+    recon_loss = F.mse_loss(recon_x, x, reduction='sum')
+    kl_div = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp())
+
+    return recon_loss + kl_div
+
 def train(vae, lr, num_epochs, dataset, batch_size):
-    criterion = nn.MSELoss()
     longLoss = None
 
     print(f"Number of parameters: {vae.get_num_params()}")
@@ -32,26 +38,30 @@ def train(vae, lr, num_epochs, dataset, batch_size):
 
         for i, image in enumerate(train_loader):
             image = image.to(device)
-            decoded = vae(image)
-            loss = criterion(image, decoded)
+            decoded, mu, logvar = vae(image)
+
+            loss = vae_loss(decoded, image, mu, logvar)
             optimizer.zero_grad()
+
             loss.backward()
             optimizer.step()
 
-            if longLoss is None:
-                longLoss = loss.item() 
-            else:
-                longLoss = 0.998 * longLoss + 0.002 * loss.item()
-            
-            if i % 5 == 0:
-                print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
+            normLoss = loss.item() / (batch_size * 3 * 96 * 96)
 
-        show_image(image[0].cpu().detach().numpy(), save=True, name=f"{epoch}_original")
-        show_image(decoded[0].cpu().detach().numpy(), save=True, name=f"{epoch}_decoded")
-        
-        # if epoch > 0 and epoch % 5 == 0:
-        #     torch.save(vae.state_dict(), f"VAE_model_{epoch}.pt")
-        #     torch.save(optimizer.state_dict(), f"Optimizer_{epoch}.pt")
+            if longLoss is None:
+                longLoss = normLoss
+            else:
+                longLoss = 0.995 * longLoss + 0.005 * normLoss
+            
+            if i % 2 == 0:
+                print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(normLoss, 6)}")
+
+        if epoch % 5 == 0:
+            show_4_images(image[:4].cpu().detach().numpy(), save=True, name=f"{epoch}_original")
+            show_4_images(decoded[:4].cpu().detach().numpy(), save=True, name=f"{epoch}_decoded")
+            if epoch > 30:
+                torch.save(vae.state_dict(), f"VAE_model_{epoch}.pt")
+                torch.save(optimizer.state_dict(), f"Optimizer_{epoch}.pt")
 
 
 if __name__ == '__main__':
@@ -73,7 +83,7 @@ if __name__ == '__main__':
 
     vae = VariationalAutoEncoder(device=device)
 
-    train(vae, 5e-5, 500, dataset, batch_size=10)
+    train(vae, 1e-4, 500, dataset, batch_size=24)
 
     end = time.time()
     print(f"Total time: {end - start}")

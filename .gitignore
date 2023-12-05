@@ -15,6 +15,7 @@ data/*
 *.pt
 *.txt
 stl10_binary/*
+tmp.py
 
 # Distribution / packaging
 .Python

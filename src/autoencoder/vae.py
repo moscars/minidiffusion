@@ -29,25 +29,15 @@ class Encoder(nn.Module):
         self.conv3 = nn.Conv2d(sz, 4, kernel_size=3, padding=1, stride=2)
 
     def forward(self, x):
-        #print("Doing forward pass", x.shape)
         x = self.conv1(x)
-        #print("After conv1", x.shape)
         x = F.relu(x)
-        #print("After relu", x.shape)
         x = self.block1(x)
-        #print("After block1", x.shape)
         x = self.block2(x)
-        #print("After block2", x.shape)
         x = self.conv2(x)
-        #print("After conv2", x.shape)
         x = F.relu(x)
-        #print("After relu", x.shape)
         x = self.block3(x)
-        #print("After block3", x.shape)
         x = self.block4(x)
-        #print("After block4", x.shape)
         x = self.conv3(x)
-        #print("After conv3", x.shape)
         return x
 
 class Decoder(nn.Module):
@@ -66,29 +56,17 @@ class Decoder(nn.Module):
         self.conv3 = nn.Conv2d(64, 3, kernel_size=3, padding=1)
 
     def forward(self, x):
-        #print("Doing forward pass", x.shape)
         x = self.conv1(x)
-        #print("After conv1", x.shape)
         x = F.relu(x)
-        #print("After relu", x.shape)
         x = self.block1(x)
-        #print("After block1", x.shape)
         x = self.upsample1(x)
-        #print("After upsample1", x.shape)
         x = self.block2(x)
-        #print("After block2", x.shape)
         x = self.conv2(x)
-        #print("After conv2", x.shape)
         x = F.relu(x)
-        #print("After relu", x.shape)
         x = self.block3(x)
-        #print("After block3", x.shape)
         x = self.upsample2(x)
-        #print("After upsample2", x.shape)
         x = self.block4(x)
-        #print("After block4", x.shape)
         x = self.conv3(x)
-        #print("After conv3", x.shape)
         return x
     
 class VariationalAutoEncoder(nn.Module):
@@ -97,17 +75,31 @@ class VariationalAutoEncoder(nn.Module):
         self.device = device
 
         self.encoder = Encoder(device)
+        # outputs latent space (4 x 24 x 24)
+        tot = 4 * 24 * 24
+        self.fcMu = nn.Linear(tot, tot)
+        self.fcSigma = nn.Linear(tot, tot)
+
         self.decoder = Decoder(device)
 
     def get_num_params(self):
         return sum(p.numel() for p in self.parameters() if p.requires_grad)
 
     def encode(self, x):
-        return self.encoder(x)
+        x = self.encoder(x)
+        x = x.view(-1, 4 * 24 * 24)
+        return self.fcMu(x), self.fcSigma(x)
     
+    def reparameterize(self, mu, sigma):
+        std = torch.exp(sigma / 2)
+        eps = torch.randn_like(std)
+        return mu + eps * std
+
     def decode(self, z):
         return self.decoder(z)
     
     def forward(self, x):
-        z = self.encode(x)
-        return self.decode(z)
+        mu, sigma = self.encode(x)
+        z = self.reparameterize(mu, sigma)
+        z = z.view(-1, 4, 24, 24)
+        return self.decode(z), mu, sigma
