@@ -1,5 +1,5 @@
 import numpy as np
-from unet import UNet
+from src.unet import UNet
 import torch
 from torch import optim, nn
 

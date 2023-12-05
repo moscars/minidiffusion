@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from diffusion import Diffusion
-from ema import ExponentialMovingAverage
-from dataset import TorchDataset
+from src.diffusion import Diffusion
+from src.ema import ExponentialMovingAverage
+from src.dataset import TorchDataset
 from utils import *
 from torch import optim, nn
 from torch.utils.data import DataLoader
