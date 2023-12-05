@@ -9,37 +9,6 @@ from torch.utils.data import DataLoader
 import torch
 import time
 
-def extract_horses(filename, horses, labels):
-    data = unpickle(filename)
-    for i in range(len(data[b'labels'])):
-        if data[b'labels'][i] == 7:
-            horses.append(data[b'data'][i])
-            labels.append(data[b'labels'][i])
-
-def extract_all_data(filename, images, labels, classes):
-    data = unpickle(filename)
-    for i in range(len(data[b'labels'])):
-        if data[b'labels'][i] in classes:
-            images.append(data[b'data'][i])
-            labels.append(data[b'labels'][i])
-
-def read_binary_data(filename, labelfile, images, labels, classes):
-    with open(filename, 'rb') as f:
-        everything = np.fromfile(f, dtype=np.uint8)
-        img = np.reshape(everything, (-1, 3, 96, 96))
-        img = [img[i] for i in range(len(img))]
-    
-    with open(labelfile, 'rb') as f:
-        labs = np.fromfile(f, dtype=np.uint8)
-
-    for i, pic in enumerate(img):
-        if labs[i] in classes:
-            images.append(pic)
-
-    for lab in labs:
-        if lab in classes:
-            labels.append(lab)
-
 def train(diffusion, lr, num_epochs, dataset, batch_size):
     criterion = nn.MSELoss()
     longLoss = None
@@ -130,6 +99,7 @@ if __name__ == '__main__':
     # extract_all_data('data/test_batch', images, labels, classes)
     read_binary_data('stl10_binary/train_X.bin', 'stl10_binary/train_Y.bin', images, labels, classes)
     images = np.array([normalize(squeeze01(x)) for x in images])
+    print(images.shape)
 
     images = torch.tensor(images, dtype=torch.float32)
     labels = torch.tensor(labels, dtype=torch.int32)
