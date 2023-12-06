@@ -102,7 +102,7 @@ class SelfAttention(nn.Module):
         return x.swapaxes(2, 1).view(-1, self.channels, self.size, self.size)
 
 class UNet(nn.Module):
-    def __init__(self, device, num_classes, img_size=32):
+    def __init__(self, device, num_classes, img_size=32, in_channels=3):
         super(UNet, self).__init__()
 
         self.label_embedding = nn.Embedding(num_classes, embedding_dim)
@@ -112,7 +112,7 @@ class UNet(nn.Module):
         self.time_emb = self.time_emb.to(device)
         self.time_emb.requires_grad = False
 
-        self.inp = ConvResidualBlock(in_channels=3, out_channels=64, use_residual=False)
+        self.inp = ConvResidualBlock(in_channels=in_channels, out_channels=64, use_residual=False)
 
         self.down1 = DownBlock(in_channels=64, out_channels=128)
         self.selfatt1 = SelfAttention(channels=128, size=self.img_size//2)
@@ -132,7 +132,7 @@ class UNet(nn.Module):
         self.up3 = UpBlock(in_channels=128, out_channels=64)
         self.selfatt6 = SelfAttention(channels=64, size=self.img_size)
 
-        self.out = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1)
+        self.out = nn.Conv2d(in_channels=64, out_channels=4, kernel_size=1)
 
     def initTimeEncoder(self):
         posMat = torch.zeros((max_time, embedding_dim))

@@ -16,6 +16,9 @@ data/*
 *.txt
 stl10_binary/*
 tmp.py
+*.npy
+taesd/*
+linnaeus/*
 
 # Distribution / packaging
 .Python

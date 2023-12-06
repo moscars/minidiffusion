@@ -11,6 +11,7 @@ from torch.utils.data import DataLoader
 import torch.nn.functional as F
 import torch
 import time
+from tmp import Autoencoder
 
 def vae_loss(recon_x, x, mu, logvar):
     recon_loss = F.mse_loss(recon_x, x, reduction='sum')
@@ -38,7 +39,10 @@ def train(vae, lr, num_epochs, dataset, batch_size):
 
         for i, image in enumerate(train_loader):
             image = image.to(device)
-            decoded, mu, logvar = vae(image)
+            decoded, distribution = vae(image)
+
+            mu = distribution.mean
+            logvar = distribution.log_var
 
             loss = vae_loss(decoded, image, mu, logvar)
             optimizer.zero_grad()
@@ -81,9 +85,8 @@ if __name__ == '__main__':
 
     print(f"Length of dataset: {len(dataset)}")
 
-    vae = VariationalAutoEncoder(device=device)
-
-    train(vae, 1e-4, 500, dataset, batch_size=24)
+    vae = Autoencoder()
+    train(vae, 1e-4, 500, dataset, batch_size=32)
 
     end = time.time()
     print(f"Total time: {end - start}")

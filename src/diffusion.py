@@ -4,7 +4,7 @@ import torch
 from torch import optim, nn
 
 class Diffusion:
-    def __init__(self, device, num_classes, img_size=32):
+    def __init__(self, device, num_classes, img_size=32, in_channels=3):
         # prepare for forward noising
         self.device = device
         self.image_size = img_size
@@ -19,7 +19,8 @@ class Diffusion:
         self.alphas = self.alphas.to(device)
         self.betas = self.betas.to(device)
 
-        self.model = UNet(device=device, num_classes=num_classes, img_size=self.image_size)
+        self.model = UNet(device=device, num_classes=num_classes, img_size=self.image_size, in_channels=in_channels)
+        self.vae = None
 
     def get_num_params(self):
         return sum(p.numel() for p in self.model.parameters() if p.requires_grad)
@@ -45,10 +46,14 @@ class Diffusion:
         self.model.eval()
         with torch.no_grad():
             
-            label = torch.full((batch_size,), class_to_gen)
-            label = label.to(self.device)
+            if class_to_gen == None:
+                label = torch.tensor(np.array([0, 1, 2, 3]))
+                label = label.to(self.device)
+            else:
+                label = torch.tensor(np.array([class_to_gen] * batch_size))
+                label = label.to(self.device)
 
-            image = torch.randn(batch_size, 3, self.image_size, self.image_size).to(self.device)
+            image = torch.randn(batch_size, 4, self.image_size, self.image_size).to(self.device)
             for step in range(999, -1, -1):
                 time = torch.full((batch_size,), step)
                 uncond_pred_noise = self.model(image, time)
@@ -73,10 +78,14 @@ class Diffusion:
                 beta = beta.view(-1, 1, 1, 1)
 
                 image = 1 / torch.sqrt(alpha) * (image - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * pred_noise) + torch.sqrt(beta) * new_noise
+
+            unscaled = self.vae.unscale_latents(image)
+            decoded = self.vae.decoder(unscaled).clamp(0, 1)
+            image = decoded
             
         self.model.train()
 
-        return image.cpu().numpy()[0]
+        return image.cpu().numpy()
 
 
 

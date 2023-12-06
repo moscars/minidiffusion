@@ -99,7 +99,7 @@ class VariationalAutoEncoder(nn.Module):
         return self.decoder(z)
     
     def forward(self, x):
-        mu, sigma = self.encode(x)
-        z = self.reparameterize(mu, sigma)
+        mu, logVar = self.encode(x)
+        z = self.reparameterize(mu, logVar)
         z = z.view(-1, 4, 24, 24)
-        return self.decode(z), mu, sigma
+        return self.decode(z), mu, logVar

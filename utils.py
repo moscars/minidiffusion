@@ -1,6 +1,8 @@
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+from PIL import Image
+import os
 
 def unpickle(file):
     with open(file, 'rb') as fo:
@@ -20,6 +22,25 @@ def extract_all_data(filename, images, labels, classes):
         if data[b'labels'][i] in classes:
             images.append(data[b'data'][i])
             labels.append(data[b'labels'][i])
+
+def read_one_lineaus(filename):
+    img = Image.open(filename)
+    img = np.array(img)
+    img = img.transpose(2, 0, 1)
+    return img
+
+def read_lineaus(path):
+    images = []
+    labels = []
+
+    label_dict = {'berry': 0, 'bird': 1, 'dog': 2, 'flower': 3}
+    for label in label_dict:
+        subdir = os.path.join(path, label)
+        for file in os.listdir(subdir):
+            if file.endswith('.jpg'):
+                images.append(read_one_lineaus(os.path.join(subdir, file)))
+                labels.append(label_dict[label])
+    return images, labels
 
 def read_binary_data(filename, labelfile, images, labels, classes):
     with open(filename, 'rb') as f:
@@ -41,11 +62,11 @@ def read_binary_data(filename, labelfile, images, labels, classes):
 def format_image_data(data_row):
     data_row = np.array(data_row)
     data_row = np.clip(data_row, -1, 1)
-    data_row = unnormalize(data_row)
+    #data_row = unnormalize(data_row)
     # for small images
-    #image = data_row.transpose(1, 2, 0)
-    # for 96x96 dataset
-    image = data_row.transpose(2, 1, 0)
+    image = data_row.transpose(1, 2, 0)
+    #for 96x96 dataset
+    #image = data_row.transpose(2, 1, 0)
     return image
 
 def show_image(data_row, save=False, name=None):
