@@ -44,7 +44,7 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
             image = image.to(device)
             label = label.to(device)
             # move this to the GPU
-            image = encodeBatch(image, vae)
+           # image = encodeBatch(image, vae)
             current_batch_size = image.shape[0]
 
             t = torch.randint(1, diffusion.noising_steps, (current_batch_size,))
@@ -109,29 +109,26 @@ if __name__ == '__main__':
     # np.save('images.npy', images)
     # np.save('labels.npy', labels)
     # read images and labels from file
-    images = np.load('images.npy')
+    images = np.load('encoded_images.npy')
     labels = np.load('labels.npy')
 
     images = torch.tensor(images, dtype=torch.float32)
     labels = torch.tensor(labels, dtype=torch.int32)
 
-    vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
-
-
-    new_ims = []
-
-    # for batch in images
-    for i in range(0, len(images), 100):
-        print(i, len(images))
-        tmp = images[i:i+100]
-        tmp = tmp.to(device)
-        encoded = encodeBatch(tmp, vae)
-        for j in range(len(encoded)):
-            new_ims.append(encoded[j].cpu().numpy())
-    images = np.array(new_ims)
-    #sav
-    np.save('encoded_images.npy', images)
-    exit()
+    # vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
+    # new_ims = []
+    # # for batch in images
+    # for i in range(0, len(images), 100):
+    #     print(i, len(images))
+    #     tmp = images[i:i+100]
+    #     tmp = tmp.to(device)
+    #     encoded = encodeBatch(tmp, vae)
+    #     for j in range(len(encoded)):
+    #         new_ims.append(encoded[j].cpu().numpy())
+    # images = np.array(new_ims)
+    # #sav
+    # np.save('encoded_images.npy', images)
+    # exit()
 
     dataset = TorchDataset(images, labels)
 
