@@ -132,7 +132,7 @@ class UNet(nn.Module):
         self.up3 = UpBlock(in_channels=128, out_channels=64)
         self.selfatt6 = SelfAttention(channels=64, size=self.img_size)
 
-        self.out = nn.Conv2d(in_channels=64, out_channels=4, kernel_size=1)
+        self.out = nn.Conv2d(in_channels=64, out_channels=3, kernel_size=1)
 
     def initTimeEncoder(self):
         posMat = torch.zeros((max_time, embedding_dim))

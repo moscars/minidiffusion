@@ -62,7 +62,7 @@ def read_binary_data(filename, labelfile, images, labels, classes):
 def format_image_data(data_row):
     data_row = np.array(data_row)
     data_row = np.clip(data_row, -1, 1)
-    #data_row = unnormalize(data_row)
+    data_row = unnormalize(data_row)
     # for small images
     image = data_row.transpose(1, 2, 0)
     #for 96x96 dataset

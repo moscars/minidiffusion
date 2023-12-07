@@ -18,7 +18,7 @@ stl10_binary/*
 tmp.py
 *.npy
 taesd/*
-linnaeus/*
+linnaeus*/*
 
 # Distribution / packaging
 .Python

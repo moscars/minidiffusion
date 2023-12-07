@@ -25,15 +25,13 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
     diffusion.model.to(device)
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
 
-    # diffusion.model.load_state_dict(torch.load('model_160.pt', map_location=device))
-    # optimizer.load_state_dict(torch.load('optimizer_160.pt', map_location=device))
+    # diffusion.model.load_state_dict(torch.load('64_L_label_model_50.pt', map_location=device))
+    # optimizer.load_state_dict(torch.load('64_L_label_optimizer_50.pt', map_location=device))
     ema = ExponentialMovingAverage(0.995, diffusion.model)
-
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
-
     diffusion.model.train()
-    vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
-    diffusion.vae = vae
+    # vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
+    # diffusion.vae = vae
 
     for epoch in range(num_epochs):
         print(f"Epoch: {epoch}")
@@ -68,21 +66,21 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
             else:
                 longLoss = 0.998 * longLoss + 0.002 * loss.item()
             
-            if i % 50 == 0:
+            if i % 20 == 0:
                 print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
         
-        if epoch > 20 and epoch % 10 == 0:
-            torch.save(diffusion.model.state_dict(), f"L_label_model_{epoch}.pt")
-            torch.save(optimizer.state_dict(), f"L_label_optimizer_{epoch}.pt")
+        if epoch > 8 and epoch % 10 == 0:
+            torch.save(diffusion.model.state_dict(), f"32_L_label_model_{epoch}_2.pt")
+            torch.save(optimizer.state_dict(), f"32_L_label_optimizer_{epoch}_2.pt")
 
         if epoch > 0 and epoch % 10 == 0:
-            show_4_images(diffusion.generate(4), save=True, name=f"11_256_vae{epoch}")
+            dec, _ = diffusion.generate(4)
+            show_4_images(dec, save=True, name=f"22_32_{epoch}")
             ema_model = ema.getEMAModel()
-            tmpDiff = Diffusion(device=device, num_classes=4, in_channels=4)
+            tmpDiff = Diffusion(device=device, num_classes=4, img_size=32, in_channels=3)
             tmpDiff.model = ema_model
-            tmpDiff.vae = vae
-            show_4_images(tmpDiff.generate(4), save=True, name=f"11_256_vae_ema{epoch}")
-
+            dec2, _ = tmpDiff.generate(4)
+            show_4_images(dec2, save=True, name=f"22_32_ema{epoch}")
 
 if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
@@ -102,15 +100,17 @@ if __name__ == '__main__':
     # extract_all_data('data/test_batch', images, labels, classes)
     # read_binary_data('stl10_binary/train_X.bin', 'stl10_binary/train_Y.bin', images, labels, classes)
 
-    # images, labels = read_lineaus('linnaeus/train')
-    # images = np.array([squeeze01(x) for x in images])
+    # images, labels = read_lineaus('linnaeus32/train')
+    # images = np.array([normalize(squeeze01(x)) for x in images])
     # labels = np.array(labels)
-    # #save images and labels to file
+
+    # # # #save images and labels to file
     # np.save('images.npy', images)
     # np.save('labels.npy', labels)
-    # read images and labels from file
-    images = np.load('encoded_images.npy')
+    #read images and labels from file
+    images = np.load('images.npy')
     labels = np.load('labels.npy')
+    # show_4_images(images[:4])
 
     images = torch.tensor(images, dtype=torch.float32)
     labels = torch.tensor(labels, dtype=torch.int32)
@@ -134,7 +134,7 @@ if __name__ == '__main__':
 
     print(f"Length of dataset: {len(dataset)}")
 
-    diffusion = Diffusion(device=device, num_classes=4, img_size=32, in_channels=4)
+    diffusion = Diffusion(device=device, num_classes=4, img_size=32, in_channels=3)
     train(diffusion, 6e-4, 500, dataset, batch_size=24)
 
     end = time.time()
