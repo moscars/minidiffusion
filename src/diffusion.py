@@ -49,7 +49,7 @@ class Diffusion:
                 label = torch.tensor(np.array([0, 1, 2, 3]))
                 label = label.to(self.device)
             else:
-                label = torch.tensor(np.array([class_to_gen] * batch_size))
+                label = torch.full((batch_size,), class_to_gen)
                 label = label.to(self.device)
 
             image = torch.randn(batch_size, 3, self.image_size, self.image_size).to(self.device)

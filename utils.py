@@ -18,10 +18,12 @@ def extract_horses(filename, horses, labels):
 
 def extract_all_data(filename, images, labels, classes):
     data = unpickle(filename)
+    #et([1, 4, 7, 8])
+    mp = {1: 0, 4: 1, 7: 2, 8: 3}
     for i in range(len(data[b'labels'])):
         if data[b'labels'][i] in classes:
             images.append(data[b'data'][i])
-            labels.append(data[b'labels'][i])
+            labels.append(mp[data[b'labels'][i]])
 
 def read_one_lineaus(filename):
     img = Image.open(filename)
@@ -38,6 +40,19 @@ def read_lineaus(path):
         subdir = os.path.join(path, label)
         for file in os.listdir(subdir):
             if file.endswith('.jpg'):
+                images.append(read_one_lineaus(os.path.join(subdir, file)))
+                labels.append(label_dict[label])
+    return images, labels
+
+def read_cifar_10_64(path):
+    images = []
+    labels = []
+    label_dict = {'class1': 0, 'class4': 1, 'class7': 2, 'class8': 3}
+    for label in label_dict:
+        subdir = os.path.join(path, label)
+        print(subdir)
+        for file in os.listdir(subdir):
+            if file.endswith('.png'):
                 images.append(read_one_lineaus(os.path.join(subdir, file)))
                 labels.append(label_dict[label])
     return images, labels
@@ -89,7 +104,7 @@ def show_4_images(data, save=False, name=None):
         ax.axis('off')  # Hide axes for better visualization
     
     if save:
-        plt.savefig(f'images/{name}.png')
+        plt.savefig(f'base_img/{name}.png')
         plt.close()
     else:
         plt.show()

@@ -66,28 +66,32 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
             else:
                 longLoss = 0.998 * longLoss + 0.002 * loss.item()
             
-            if i % 20 == 0:
+            if i % 100 == 0:
                 print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
         
-        if epoch > 8 and epoch % 10 == 0:
-            torch.save(diffusion.model.state_dict(), f"32_L_label_model_{epoch}_2.pt")
-            torch.save(optimizer.state_dict(), f"32_L_label_optimizer_{epoch}_2.pt")
+        if epoch > 3 and epoch % 5 == 0:
+            torch.save(diffusion.model.state_dict(), f"base_model64_{epoch}.pt")
+            torch.save(optimizer.state_dict(), f"base_optimizer64_{epoch}.pt")
 
         if epoch > 0 and epoch % 10 == 0:
-            dec, _ = diffusion.generate(4)
-            show_4_images(dec, save=True, name=f"22_32_{epoch}")
+            show_4_images(diffusion.generate(4, 0)[0], save=True, name=f"11_base_64_0_{epoch}")
+            show_4_images(diffusion.generate(4, 1)[0], save=True, name=f"11_base_64_1_{epoch}")
+            show_4_images(diffusion.generate(4, 2)[0], save=True, name=f"11_base_64_2_{epoch}")
+            show_4_images(diffusion.generate(4, 3)[0], save=True, name=f"11_base_64_3_{epoch}")
             ema_model = ema.getEMAModel()
-            tmpDiff = Diffusion(device=device, num_classes=4, img_size=32, in_channels=3)
+            tmpDiff = Diffusion(device=device, num_classes=4, img_size=64, in_channels=3)
             tmpDiff.model = ema_model
-            dec2, _ = tmpDiff.generate(4)
-            show_4_images(dec2, save=True, name=f"22_32_ema{epoch}")
+            show_4_images(tmpDiff.generate(4, 0)[0], save=True, name=f"11_base_64_0_{epoch}_ema")
+            show_4_images(tmpDiff.generate(4, 1)[0], save=True, name=f"11_base_64_1_{epoch}_ema")
+            show_4_images(tmpDiff.generate(4, 2)[0], save=True, name=f"11_base_64_2_{epoch}_ema")
+            show_4_images(tmpDiff.generate(4, 3)[0], save=True, name=f"11_base_64_3_{epoch}_ema")
 
 if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
     print(f"Using device: {device}")
 
     start = time.time()
-    #classes = set([1, 4, 7, 8])
+    classes = set([1, 4, 7, 8])
     #classes = set([2, 3, 5, 9])
 
     images = []
@@ -99,19 +103,26 @@ if __name__ == '__main__':
     # extract_all_data('data/data_batch_5', images, labels, classes)
     # extract_all_data('data/test_batch', images, labels, classes)
     # read_binary_data('stl10_binary/train_X.bin', 'stl10_binary/train_Y.bin', images, labels, classes)
-
     # images, labels = read_lineaus('linnaeus32/train')
-    # images = np.array([normalize(squeeze01(x)) for x in images])
+    # images, labels = read_cifar_10_64('cifar10-64/train')
+    # images_test, labels_test = read_cifar_10_64('cifar10-64/test')
+    # images.extend(images_test)
+    # labels.extend(labels_test)
+
+    # images = np.array(images)
     # labels = np.array(labels)
 
+#    images = np.reshape(images, (images.shape[0], 3, 32, 32))
     # # # #save images and labels to file
     # np.save('images.npy', images)
     # np.save('labels.npy', labels)
+    # exit()
     #read images and labels from file
     images = np.load('images.npy')
     labels = np.load('labels.npy')
-    # show_4_images(images[:4])
-
+    images = np.array([normalize(squeeze01(x)) for x in images])
+    labels = np.array(labels)
+    
     images = torch.tensor(images, dtype=torch.float32)
     labels = torch.tensor(labels, dtype=torch.int32)
 
@@ -134,8 +145,8 @@ if __name__ == '__main__':
 
     print(f"Length of dataset: {len(dataset)}")
 
-    diffusion = Diffusion(device=device, num_classes=4, img_size=32, in_channels=3)
-    train(diffusion, 6e-4, 500, dataset, batch_size=24)
+    diffusion = Diffusion(device=device, num_classes=4, img_size=64, in_channels=3)
+    train(diffusion, 1e-4, 500, dataset, batch_size=4)
 
     end = time.time()
     print(f"Total time: {end - start}")

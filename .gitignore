@@ -19,6 +19,7 @@ tmp.py
 *.npy
 taesd/*
 linnaeus*/*
+cifar10-64/*
 
 # Distribution / packaging
 .Python
