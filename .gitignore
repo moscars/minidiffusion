@@ -8,6 +8,7 @@ __pycache__/
 images/*
 horses/*
 src/autoencoder/images*
+all_imgs*
 
 resources.txt
 .DS_Store

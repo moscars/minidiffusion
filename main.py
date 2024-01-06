@@ -25,9 +25,9 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
     diffusion.model.to(device)
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
 
-    # diffusion.model.load_state_dict(torch.load('64_L_label_model_50.pt', map_location=device))
-    # optimizer.load_state_dict(torch.load('64_L_label_optimizer_50.pt', map_location=device))
-    ema = ExponentialMovingAverage(0.995, diffusion.model)
+    #diffusion.model.load_state_dict(torch.load('base_model64_30.pt', map_location=device))
+    #optimizer.load_state_dict(torch.load('base_optimizer64_30.pt', map_location=device))
+    ema = ExponentialMovingAverage(0.998, diffusion.model)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     diffusion.model.train()
     # vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
@@ -64,7 +64,7 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
             if longLoss is None:
                 longLoss = loss.item() 
             else:
-                longLoss = 0.998 * longLoss + 0.002 * loss.item()
+                longLoss = 0.9995 * longLoss + 0.0005 * loss.item()
             
             if i % 100 == 0:
                 print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
@@ -146,6 +146,8 @@ if __name__ == '__main__':
     print(f"Length of dataset: {len(dataset)}")
 
     diffusion = Diffusion(device=device, num_classes=4, img_size=64, in_channels=3)
+
+    # first 30 epochs with lr 1e-4
     train(diffusion, 1e-4, 500, dataset, batch_size=4)
 
     end = time.time()
