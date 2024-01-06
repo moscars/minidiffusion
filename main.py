@@ -10,6 +10,8 @@ import torch
 import time
 from taesd.taesd import TAESD
 
+CIFAR_SIZE = 32
+
 def encodeBatch(batch, vae):
     with torch.no_grad():
         encoded = vae.encoder(batch)
@@ -91,27 +93,29 @@ if __name__ == '__main__':
     print(f"Using device: {device}")
 
     start = time.time()
-    classes = set([1, 4, 7, 8])
-    #classes = set([2, 3, 5, 9])
 
-    images = []
-    labels = []
-    extract_all_data('data/data_batch_1', images, labels, classes)
-    extract_all_data('data/data_batch_2', images, labels, classes)
-    extract_all_data('data/data_batch_3', images, labels, classes)
-    extract_all_data('data/data_batch_4', images, labels, classes)
-    extract_all_data('data/data_batch_5', images, labels, classes)
-    extract_all_data('data/test_batch', images, labels, classes)
-    # read_binary_data('stl10_binary/train_X.bin', 'stl10_binary/train_Y.bin', images, labels, classes)
-    # images, labels = read_lineaus('linnaeus32/train')
-    # images, labels = read_cifar_10_64('cifar10-64/train')
-    # images_test, labels_test = read_cifar_10_64('cifar10-64/test')
-    # images.extend(images_test)
-    # labels.extend(labels_test)
+    if CIFAR_SIZE == 32:
+        classes = set([1, 4, 7, 8])
+        #classes = set([2, 3, 5, 9])
 
-    images = np.array(images)
-    labels = np.array(labels)
-    images = np.reshape(images, (images.shape[0], 3, 32, 32))
+        images = []
+        labels = []
+        extract_all_data('data/data_batch_1', images, labels, classes)
+        extract_all_data('data/data_batch_2', images, labels, classes)
+        extract_all_data('data/data_batch_3', images, labels, classes)
+        extract_all_data('data/data_batch_4', images, labels, classes)
+        extract_all_data('data/data_batch_5', images, labels, classes)
+        extract_all_data('data/test_batch', images, labels, classes)
+        # read_binary_data('stl10_binary/train_X.bin', 'stl10_binary/train_Y.bin', images, labels, classes)
+        # images, labels = read_lineaus('linnaeus32/train')
+        # images, labels = read_cifar_10_64('cifar10-64/train')
+        # images_test, labels_test = read_cifar_10_64('cifar10-64/test')
+        # images.extend(images_test)
+        # labels.extend(labels_test)
+
+        images = np.array(images)
+        labels = np.array(labels)
+        images = np.reshape(images, (images.shape[0], 3, 32, 32))
     
 
     # # # #save images and labels to file
@@ -119,10 +123,18 @@ if __name__ == '__main__':
     # np.save('labels.npy', labels)
     # exit()
     #read images and labels from file
-    # images = np.load('images.npy')
-    # labels = np.load('labels.npy')
+        
+    elif CIFAR_SIZE == 64:
+        images = np.load('images.npy')
+        labels = np.load('labels.npy')
+
     images = np.array([normalize(squeeze01(x)) for x in images])
     labels = np.array(labels)
+
+    print(images.shape)
+
+    show_4_images(images[:4])
+    exit()
 
     images = torch.tensor(images, dtype=torch.float32)
     labels = torch.tensor(labels, dtype=torch.int32)
