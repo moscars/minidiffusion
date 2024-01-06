@@ -60,7 +60,7 @@ class Diffusion:
                 if class_to_gen is not None:
                     cond_pred_noise = self.model(image, time, label)
                     # CFG formula with scale factor 3
-                    pred_noise = uncond_pred_noise + (cond_pred_noise - uncond_pred_noise) * 3
+                    pred_noise = cond_pred_noise + (cond_pred_noise - uncond_pred_noise) * 3
                 else:
                     pred_noise = uncond_pred_noise
 
