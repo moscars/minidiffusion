@@ -18,22 +18,22 @@ def encodeBatch(batch, vae):
 
 def train(diffusion, lr, num_epochs, dataset, batch_size):
     criterion = nn.MSELoss()
-    longLoss = None
+    longLoss = 0.042
 
     print(f"Number of parameters: {diffusion.get_num_params()}")
     # load from state
     diffusion.model.to(device)
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
 
-    #diffusion.model.load_state_dict(torch.load('base_model64_30.pt', map_location=device))
-    #optimizer.load_state_dict(torch.load('base_optimizer64_30.pt', map_location=device))
+    diffusion.model.load_state_dict(torch.load('6_jan_model32_10.pt', map_location=device))
+    optimizer.load_state_dict(torch.load('6_jan_optimizer32_10.pt', map_location=device))
     ema = ExponentialMovingAverage(0.998, diffusion.model)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     diffusion.model.train()
     # vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
     # diffusion.vae = vae
 
-    for epoch in range(num_epochs):
+    for epoch in range(11, num_epochs):
         print(f"Epoch: {epoch}")
         # start by training on one at a time
         num_batches = len(dataset) // batch_size
@@ -79,7 +79,7 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
             show_4_images(diffusion.generate(4, 2)[0], save=True, name=f"6_jan_base_32_2_{epoch}")
             show_4_images(diffusion.generate(4, 3)[0], save=True, name=f"6_jan_base_32_3_{epoch}")
             ema_model = ema.getEMAModel()
-            tmpDiff = Diffusion(device=device, num_classes=4, img_size=64, in_channels=3)
+            tmpDiff = Diffusion(device=device, num_classes=4, img_size=32, in_channels=3)
             tmpDiff.model = ema_model
             show_4_images(tmpDiff.generate(4, 0)[0], save=True, name=f"6_jan_base_32_0_{epoch}_ema")
             show_4_images(tmpDiff.generate(4, 1)[0], save=True, name=f"6_jan_base_32_1_{epoch}_ema")

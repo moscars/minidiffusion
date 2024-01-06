@@ -21,6 +21,7 @@ tmp.py
 taesd/*
 linnaeus*/*
 cifar10-64/*
+*.png
 
 # Distribution / packaging
 .Python
