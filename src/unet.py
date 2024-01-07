@@ -12,10 +12,10 @@ class ConvResidualBlock(nn.Module):
         self.use_residual = use_residual
 
         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, bias=False)
-        self.gn1 = nn.GroupNorm(1, out_channels)
+        self.gn1 = nn.GroupNorm(8, out_channels)
 
         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1, bias=False)
-        self.gn2 = nn.GroupNorm(1, out_channels)
+        self.gn2 = nn.GroupNorm(8, out_channels)
 
     def forward(self, x):
         x1 = self.conv1(x)

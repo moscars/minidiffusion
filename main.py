@@ -10,7 +10,7 @@ import torch
 import time
 from taesd.taesd import TAESD
 
-CIFAR_SIZE = 32
+CIFAR_SIZE = 64
 
 def encodeBatch(batch, vae):
     with torch.no_grad():
@@ -20,22 +20,22 @@ def encodeBatch(batch, vae):
 
 def train(diffusion, lr, num_epochs, dataset, batch_size):
     criterion = nn.MSELoss()
-    longLoss = 0.042
+    longLoss = 1
 
     print(f"Number of parameters: {diffusion.get_num_params()}")
     # load from state
     diffusion.model.to(device)
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
 
-    diffusion.model.load_state_dict(torch.load('6_jan_model32_10.pt', map_location=device))
-    optimizer.load_state_dict(torch.load('6_jan_optimizer32_10.pt', map_location=device))
+    #diffusion.model.load_state_dict(torch.load('6_jan_model32_275.pt', map_location=device))
+    #optimizer.load_state_dict(torch.load('6_jan_optimizer32_275.pt', map_location=device))
     ema = ExponentialMovingAverage(0.998, diffusion.model)
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     diffusion.model.train()
     # vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
     # diffusion.vae = vae
 
-    for epoch in range(11, num_epochs):
+    for epoch in range(num_epochs):
         print(f"Epoch: {epoch}")
         # start by training on one at a time
         num_batches = len(dataset) // batch_size
@@ -67,26 +67,30 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
                 longLoss = loss.item() 
             else:
                 longLoss = 0.9995 * longLoss + 0.0005 * loss.item()
+
+            f = open('loss.txt', 'a')
+            f.write(f"Epoch: {epoch}, Step {i} of {num_batches}: {loss.item()}\n")
+            f.close()
             
             if i % 100 == 0:
                 print(f"Step {i} of {num_batches} Long: {round(longLoss, 6)}, Current: {round(loss.item(), 6)}")
         
-        if epoch > 3 and epoch % 5 == 0:
-            torch.save(diffusion.model.state_dict(), f"6_jan_model{CIFAR_SIZE}_{epoch}.pt")
-            torch.save(optimizer.state_dict(), f"6_jan_optimizer{CIFAR_SIZE}_{epoch}.pt")
+        if epoch > 3 and epoch % 3 == 0:
+            torch.save(diffusion.model.state_dict(), f"7_jan_model{CIFAR_SIZE}_{epoch}.pt")
+            torch.save(optimizer.state_dict(), f"7_jan_optimizer{CIFAR_SIZE}_{epoch}.pt")
 
         if epoch > 0 and epoch % 10 == 0:
-            show_4_images(diffusion.generate(4, 0)[0], save=True, name=f"6_jan_base_{CIFAR_SIZE}_0_{epoch}")
-            show_4_images(diffusion.generate(4, 1)[0], save=True, name=f"6_jan_base_{CIFAR_SIZE}_1_{epoch}")
-            show_4_images(diffusion.generate(4, 2)[0], save=True, name=f"6_jan_base_{CIFAR_SIZE}_2_{epoch}")
-            show_4_images(diffusion.generate(4, 3)[0], save=True, name=f"6_jan_base_{CIFAR_SIZE}_3_{epoch}")
+            show_4_images(diffusion.generate(4, 0)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_0_{epoch}")
+            show_4_images(diffusion.generate(4, 1)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_1_{epoch}")
+            show_4_images(diffusion.generate(4, 2)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_2_{epoch}")
+            show_4_images(diffusion.generate(4, 3)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_3_{epoch}")
             ema_model = ema.getEMAModel()
             tmpDiff = Diffusion(device=device, num_classes=4, img_size=CIFAR_SIZE, in_channels=3)
             tmpDiff.model = ema_model
-            show_4_images(tmpDiff.generate(4, 0)[0], save=True, name=f"6_jan_base_{CIFAR_SIZE}_0_{epoch}_ema")
-            show_4_images(tmpDiff.generate(4, 1)[0], save=True, name=f"6_jan_base_{CIFAR_SIZE}_1_{epoch}_ema")
-            show_4_images(tmpDiff.generate(4, 2)[0], save=True, name=f"6_jan_base_{CIFAR_SIZE}_2_{epoch}_ema")
-            show_4_images(tmpDiff.generate(4, 3)[0], save=True, name=f"6_jan_base_{CIFAR_SIZE}_3_{epoch}_ema")
+            show_4_images(tmpDiff.generate(4, 0)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_0_{epoch}_ema")
+            show_4_images(tmpDiff.generate(4, 1)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_1_{epoch}_ema")
+            show_4_images(tmpDiff.generate(4, 2)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_2_{epoch}_ema")
+            show_4_images(tmpDiff.generate(4, 3)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_3_{epoch}_ema")
 
 if __name__ == '__main__':
     device = 'cuda' if torch.cuda.is_available() else ('mps' if torch.backends.mps.is_available() else 'cpu')
@@ -131,11 +135,6 @@ if __name__ == '__main__':
     images = np.array([normalize(squeeze01(x)) for x in images])
     labels = np.array(labels)
 
-    print(images.shape)
-
-    show_4_images(images[:4])
-    exit()
-
     images = torch.tensor(images, dtype=torch.float32)
     labels = torch.tensor(labels, dtype=torch.int32)
 
@@ -161,7 +160,8 @@ if __name__ == '__main__':
     diffusion = Diffusion(device=device, num_classes=4, img_size=CIFAR_SIZE, in_channels=3)
 
     # first 30 epochs with lr 1e-4
-    train(diffusion, 6e-4, 500, dataset, batch_size=24)
+    # 1e-4 and batch size 4 for 64
+    train(diffusion, 1e-4, 1000, dataset, batch_size=4)
 
     end = time.time()
     print(f"Total time: {end - start}")
