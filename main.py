@@ -20,22 +20,23 @@ def encodeBatch(batch, vae):
 
 def train(diffusion, lr, num_epochs, dataset, batch_size):
     criterion = nn.MSELoss()
-    longLoss = 1
+    longLoss = 0.0115
 
     print(f"Number of parameters: {diffusion.get_num_params()}")
     # load from state
     diffusion.model.to(device)
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
 
-    #diffusion.model.load_state_dict(torch.load('6_jan_model32_275.pt', map_location=device))
-    #optimizer.load_state_dict(torch.load('6_jan_optimizer32_275.pt', map_location=device))
+    diffusion.model.load_state_dict(torch.load('7_jan_model64_168.pt', map_location=device))
+    optimizer.load_state_dict(torch.load('7_jan_optimizer64_168.pt', map_location=device))
     ema = ExponentialMovingAverage(0.998, diffusion.model)
+    #ema.loadModel('7_jan_ema64_168.pt')
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     diffusion.model.train()
     # vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
     # diffusion.vae = vae
 
-    for epoch in range(num_epochs):
+    for epoch in range(169, num_epochs):
         print(f"Epoch: {epoch}")
         # start by training on one at a time
         num_batches = len(dataset) // batch_size
@@ -78,6 +79,7 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
         if epoch > 3 and epoch % 3 == 0:
             torch.save(diffusion.model.state_dict(), f"7_jan_model{CIFAR_SIZE}_{epoch}.pt")
             torch.save(optimizer.state_dict(), f"7_jan_optimizer{CIFAR_SIZE}_{epoch}.pt")
+            ema.saveEMAModel(f"7_jan_ema{CIFAR_SIZE}_{epoch}.pt")
 
         if epoch > 0 and epoch % 10 == 0:
             show_4_images(diffusion.generate(4, 0)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_0_{epoch}")
@@ -87,6 +89,7 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
             ema_model = ema.getEMAModel()
             tmpDiff = Diffusion(device=device, num_classes=4, img_size=CIFAR_SIZE, in_channels=3)
             tmpDiff.model = ema_model
+            tmpDiff.model.device = device
             show_4_images(tmpDiff.generate(4, 0)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_0_{epoch}_ema")
             show_4_images(tmpDiff.generate(4, 1)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_1_{epoch}_ema")
             show_4_images(tmpDiff.generate(4, 2)[0], save=True, name=f"7_jan_base_{CIFAR_SIZE}_2_{epoch}_ema")
