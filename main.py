@@ -27,14 +27,34 @@ def train(diffusion, lr, num_epochs, dataset, batch_size):
     diffusion.model.to(device)
     optimizer = optim.AdamW(diffusion.model.parameters(), lr=lr)
 
-    diffusion.model.load_state_dict(torch.load('7_jan_model64_168.pt', map_location=device))
-    optimizer.load_state_dict(torch.load('7_jan_optimizer64_168.pt', map_location=device))
+    diffusion.model.load_state_dict(torch.load('7_jan_model64_192.pt', map_location=device))
+    optimizer.load_state_dict(torch.load('7_jan_optimizer64_192.pt', map_location=device))
     ema = ExponentialMovingAverage(0.998, diffusion.model)
-    #ema.loadModel('7_jan_ema64_168.pt')
+    ema.loadModel('7_jan_ema64_192.pt')
     train_loader = DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=4, pin_memory=True)
     diffusion.model.train()
     # vae = TAESD(encoder_path="taesd/taesd_encoder.pth", decoder_path="taesd/taesd_decoder.pth").to(device)
     # diffusion.vae = vae
+
+    ema_model = ema.getEMAModel()
+    tmpDiff = Diffusion(device=device, num_classes=4, img_size=CIFAR_SIZE, in_channels=3)
+    tmpDiff.model = ema_model
+    tmpDiff.model.device = device
+    # for clas in range(4):
+    #     gen_img, _, latent = tmpDiff.generate(4, clas)
+    #     for k, _ in enumerate(latent):
+    #         for i in range(4):
+    #             show_image(latent[k][i], save=True, name=f"final_img/latent_class_{clas}_{CIFAR_SIZE}_{i}_{k}")
+
+    # exit()
+    for clas in range(4):
+        print("Starting class", clas)
+        for j in range(10):
+            print("Starting generation", j)
+            gen_img = tmpDiff.generate(4, clas)[0]
+            for i in range(4):
+                show_image(gen_img[i], save=True, name=f"final_img/ema_class_{clas}_{CIFAR_SIZE}_{j}_{i}")
+    exit()
 
     for epoch in range(169, num_epochs):
         print(f"Epoch: {epoch}")

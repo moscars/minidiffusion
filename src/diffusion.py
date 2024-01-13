@@ -53,6 +53,8 @@ class Diffusion:
                 label = label.to(self.device)
 
             image = torch.randn(batch_size, 3, self.image_size, self.image_size).to(self.device)
+
+            imageSteps = []
             for step in range(999, -1, -1):
                 time = torch.full((batch_size,), step)
                 uncond_pred_noise = self.model(image, time)
@@ -77,6 +79,8 @@ class Diffusion:
                 beta = beta.view(-1, 1, 1, 1)
 
                 image = 1 / torch.sqrt(alpha) * (image - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * pred_noise) + torch.sqrt(beta) * new_noise
+                if step in [999, 800, 600, 400, 200, 150, 100, 70, 30, 0]:
+                    imageSteps.append(image.cpu().numpy())
 
             # lat = image[:, :3, :, :]
             # unscaled = self.vae.unscale_latents(image)
@@ -84,5 +88,4 @@ class Diffusion:
             # image = decoded
 
         self.model.train()
-
-        return image.cpu().numpy(), None#lat.cpu().numpy()
+        return image.cpu().numpy(), None, imageSteps #lat.cpu().numpy()
