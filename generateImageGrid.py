@@ -1,28 +1,36 @@
 from utils import *
 from PIL import Image
 import numpy as np
+import os
 
-classes = set([1, 4, 7, 8])
-images = []
-labels = []
+def read_png_images_from_directory(directory_path):
+    images = []
+    i = 0
+    for file_name in os.listdir(directory_path):
+        i += 1
+        if file_name.endswith(".png"):
+            image_path = os.path.join(directory_path, file_name)
+            image = Image.open(image_path)
+            images.append((image_path, image))
+        if i > 50:
+            break
+    return images
 
-extract_all_data('data/data_batch_1', images, labels, classes)
-extract_all_data('data/data_batch_2', images, labels, classes)
-extract_all_data('data/data_batch_3', images, labels, classes)
-extract_all_data('data/data_batch_4', images, labels, classes)
-extract_all_data('data/data_batch_5', images, labels, classes)
-extract_all_data('data/test_batch', images, labels, classes)
-
-images = np.array(images)
-labels = np.array(labels)
-images = np.reshape(images, (images.shape[0], 3, 32, 32))
-
-images = np.array([normalize(squeeze01(x)) for x in images])
-labels = np.array(labels)
+# trueCars = read_png_images_from_directory("cifar10-64/test/class1")
+# genCars = read_png_images_from_directory("cars64")
+# trueDeer = read_png_images_from_directory("cifar10-64/test/class4")
+# genDeer = read_png_images_from_directory("deer64")
+# trueHorse = read_png_images_from_directory("cifar10-64/test/class7")
+# genHorse = read_png_images_from_directory("horse64")
+# trueShip = read_png_images_from_directory("cifar10-64/test/class8")
+# genShip = read_png_images_from_directory("ship64")
+latents = read_png_images_from_directory("latents")
+latents.sort()
+latents = [x[1] for x in latents]
 
 def create_image_grid(images, rows, cols):
-    images = images.transpose(0, 2, 3, 1)
-    images = [Image.fromarray((unnormalize(img) * 255).astype('uint8')) for img in images]
+    # images = images.transpose(0, 2, 3, 1)
+    # images = [Image.fromarray((unnormalize(img) * 255).astype('uint8')) for img in images]
     w, h = images[0].size
     
     grid_img = Image.new('RGB', size=(cols * w, rows * h), color=(255, 255, 255))
@@ -32,27 +40,33 @@ def create_image_grid(images, rows, cols):
     
     return grid_img
 
-grid_cols = 5
-grid_rows = 2
+grid_cols = 10
+grid_rows = 4
 num_images = grid_cols * grid_rows
 
-horses = []
-for i in range(len(labels)):
-    if labels[i] == 2:
-        horses.append(images[i])
+# myTot = []
+# for i in range(10):
+#     myTot.append(trueCars[i])
+# # for i in range(10):
+# #     myTot.append(genCars[i])
+# for i in range(10):
+#     myTot.append(trueDeer[i])
+# # for i in range(10):
+# #     myTot.append(genDeer[i])
+# for i in range(10):
+#     myTot.append(trueHorse[i])
+# # for i in range(10):
+# #     myTot.append(genHorse[i])
+# for i in range(10):
+#     myTot.append(trueShip[i])
+# # for i in range(10):
+#     myTot.append(genShip[i])
 
-ships = []
-for i in range(len(labels)):
-    if labels[i] == 3:
-        ships.append(images[i])
+myTot = []
+for i in range(40):
+    myTot.append(latents[i])
 
-relevant = []
-for i in range(5):
-    relevant.append(horses[i])
-for i in range(5):
-    relevant.append(ships[i])
-
-grid_image = create_image_grid(np.array(relevant)[:num_images], grid_rows, grid_cols)
+grid_image = create_image_grid(myTot, grid_rows, grid_cols)
 
 output_path = "grid_image.png"
 grid_image.save(output_path)

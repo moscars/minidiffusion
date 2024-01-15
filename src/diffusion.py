@@ -79,8 +79,8 @@ class Diffusion:
                 beta = beta.view(-1, 1, 1, 1)
 
                 image = 1 / torch.sqrt(alpha) * (image - ((1 - alpha) / (torch.sqrt(1 - alpha_hat))) * pred_noise) + torch.sqrt(beta) * new_noise
-                if step in [999, 800, 600, 400, 200, 150, 100, 70, 30, 0]:
-                    imageSteps.append(image.cpu().numpy())
+                #if step in [999, 800, 600, 400, 200, 150, 100, 70, 30, 0]:
+                #    imageSteps.append(image.cpu().numpy())
 
             # lat = image[:, :3, :, :]
             # unscaled = self.vae.unscale_latents(image)
